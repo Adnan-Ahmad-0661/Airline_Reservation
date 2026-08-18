@@ -1,0 +1,55 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ViewTicket from "./pages/ViewTicket";
+import MyBookings from "./pages/MyBookings";
+
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Booking from "./pages/Booking";
+
+import SeatSelection from "./pages/SeatSelection";
+import Payment from "./pages/Payment";
+import Confirmation from "./pages/Confirmation";
+
+function App() {
+  return (
+    <BrowserRouter>
+	
+	<Route
+	  path="/view-ticket"
+	  element={<ViewTicket />}
+	/>
+      <Routes>
+        <Route path="/" element={<Home />} />
+
+        <Route path="/login" element={<Login />} />
+
+        <Route path="/booking" element={<Booking />} />
+
+        <Route
+          path="/seat-selection"
+          element={<SeatSelection />}
+        />
+
+        <Route
+          path="/payment"
+          element={<Payment />}
+        />
+
+        <Route
+          path="/confirmation"
+          element={<Confirmation />}
+        />
+		<Route
+		    path="/my-bookings"
+		    element={<MyBookings />}
+		/>
+        <Route
+          path="/my-bookings"
+          element={<MyBookings />}
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

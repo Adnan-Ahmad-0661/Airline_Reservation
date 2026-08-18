@@ -1,0 +1,566 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const API_URL = "http://localhost:8080";
+
+function MyBookings() {
+
+    const navigate = useNavigate();
+
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // ==============================
+    // GET USER ID
+    // ==============================
+
+    const userId = localStorage.getItem("userId");
+
+
+    // ==============================
+    // LOAD BOOKINGS
+    // ==============================
+
+    useEffect(() => {
+
+        if (!userId) {
+
+            alert("Please login first");
+
+            navigate("/login");
+
+            return;
+        }
+
+        fetchBookings();
+
+    }, [userId]);
+
+
+    const fetchBookings = async () => {
+
+        try {
+
+            setLoading(true);
+
+            const response = await fetch(
+                `${API_URL}/api/bookings/user/${userId}`
+            );
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Unable to fetch bookings"
+                );
+            }
+
+            const data = await response.json();
+
+            console.log(
+                "My Bookings:",
+                data
+            );
+
+            setBookings(data);
+
+        } catch (error) {
+
+            console.error(
+                "Booking Fetch Error:",
+                error
+            );
+
+            alert(
+                error.message ||
+                "Unable to load bookings"
+            );
+
+        } finally {
+
+            setLoading(false);
+        }
+    };
+
+
+    // ==============================
+    // CANCEL BOOKING
+    // ==============================
+
+    const handleCancel = async (bookingId) => {
+
+        const confirmCancel =
+            window.confirm(
+                "Are you sure you want to cancel this booking?"
+            );
+
+        if (!confirmCancel) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(
+                `${API_URL}/api/bookings/cancel/${bookingId}`,
+                {
+                    method: "PUT",
+                }
+            );
+
+            if (!response.ok) {
+
+                const errorText =
+                    await response.text();
+
+                throw new Error(
+                    errorText ||
+                    "Cancellation failed"
+                );
+            }
+
+            const updatedBooking =
+                await response.json();
+
+            console.log(
+                "Cancelled Booking:",
+                updatedBooking
+            );
+
+            alert(
+                "Booking cancelled successfully"
+            );
+
+            // List refresh
+            fetchBookings();
+
+        } catch (error) {
+
+            console.error(
+                "Cancel Error:",
+                error
+            );
+
+            alert(
+                error.message ||
+                "Unable to cancel booking"
+            );
+        }
+    };
+
+
+    // ==============================
+    // LOADING
+    // ==============================
+
+    if (loading) {
+
+        return (
+
+            <div
+                style={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    background: "#f5f7fa",
+                    fontFamily: "Arial, sans-serif",
+                }}
+            >
+
+                <h2>
+                    Loading bookings...
+                </h2>
+
+            </div>
+        );
+    }
+
+
+    // ==============================
+    // UI
+    // ==============================
+
+    return (
+
+        <div
+            style={{
+                minHeight: "100vh",
+                background: "#f5f7fa",
+                padding: "40px",
+                fontFamily: "Arial, sans-serif",
+            }}
+        >
+
+            <div
+                style={{
+                    maxWidth: "1100px",
+                    margin: "0 auto",
+                }}
+            >
+
+                {/* HEADER */}
+
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "30px",
+                    }}
+                >
+
+                    <div>
+
+                        <h1>
+                            My Bookings
+                        </h1>
+
+                        <p>
+                            View and manage your flight bookings.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        onClick={() => navigate("/")}
+                        style={{
+                            padding: "12px 20px",
+                            background: "#0066ff",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                        }}
+                    >
+                        Back to Home
+                    </button>
+
+                </div>
+
+
+                {/* NO BOOKINGS */}
+
+                {bookings.length === 0 ? (
+
+                    <div
+                        style={{
+                            background: "white",
+                            padding: "50px",
+                            borderRadius: "12px",
+                            textAlign: "center",
+                            boxShadow:
+                                "0 3px 12px rgba(0,0,0,0.08)",
+                        }}
+                    >
+
+                        <h2>
+                            No Bookings Found
+                        </h2>
+
+                        <p>
+                            You haven't booked any flights yet.
+                        </p>
+
+                        <button
+                            onClick={() =>
+                                navigate("/")
+                            }
+                            style={{
+                                padding: "12px 25px",
+                                background: "#0066ff",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                cursor: "pointer",
+                            }}
+                        >
+                            Search Flights
+                        </button>
+
+                    </div>
+
+                ) : (
+
+                    /* BOOKINGS */
+
+                    <div
+                        style={{
+                            display: "grid",
+                            gap: "20px",
+                        }}
+                    >
+
+                        {bookings.map(
+                            (booking) => (
+
+                                <div
+                                    key={booking.id}
+                                    style={{
+                                        background: "white",
+                                        padding: "25px",
+                                        borderRadius: "12px",
+                                        boxShadow:
+                                            "0 3px 12px rgba(0,0,0,0.08)",
+                                    }}
+                                >
+
+                                    {/* TOP */}
+
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            justifyContent:
+                                                "space-between",
+                                            alignItems:
+                                                "center",
+                                            marginBottom:
+                                                "20px",
+                                        }}
+                                    >
+
+                                        <div>
+
+                                            <h2
+                                                style={{
+                                                    margin: 0,
+                                                }}
+                                            >
+                                                {booking.flight
+                                                    ?.airlineName ||
+                                                    "Airline"}
+                                            </h2>
+
+                                            <p
+                                                style={{
+                                                    margin:
+                                                        "5px 0",
+                                                    color:
+                                                        "#666",
+                                                }}
+                                            >
+                                                Flight:{" "}
+                                                {booking.flight
+                                                    ?.flightNumber ||
+                                                    "-"}
+                                            </p>
+
+                                        </div>
+
+
+                                        <span
+                                            style={{
+                                                padding:
+                                                    "8px 14px",
+                                                borderRadius:
+                                                    "20px",
+                                                background:
+                                                    booking.status ===
+                                                    "CONFIRMED"
+                                                        ? "#d1fae5"
+                                                        : "#fee2e2",
+                                                color:
+                                                    booking.status ===
+                                                    "CONFIRMED"
+                                                        ? "#065f46"
+                                                        : "#991b1b",
+                                                fontWeight:
+                                                    "bold",
+                                            }}
+                                        >
+                                            {booking.status}
+                                        </span>
+
+                                    </div>
+
+
+                                    <hr />
+
+
+                                    {/* BOOKING INFORMATION */}
+
+                                    <div
+                                        style={{
+                                            display: "grid",
+                                            gridTemplateColumns:
+                                                "repeat(3, 1fr)",
+                                            gap: "20px",
+                                            marginTop:
+                                                "20px",
+                                        }}
+                                    >
+
+                                        <div>
+
+                                            <strong>
+                                                PNR
+                                            </strong>
+
+                                            <p>
+                                                {booking.pnr}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+                                                Passenger
+                                            </strong>
+
+                                            <p>
+                                                {booking.passenger
+                                                    ?.name ||
+                                                    "-"}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+                                                Seat
+                                            </strong>
+
+                                            <p>
+                                                {booking.seatNumber ||
+                                                    "-"}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+                                                Flight
+                                            </strong>
+
+                                            <p>
+                                                {booking.flight
+                                                    ?.flightNumber ||
+                                                    "-"}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+                                                Amount
+                                            </strong>
+
+                                            <p>
+                                                ₹
+                                                {booking.amount ||
+                                                    0}
+                                            </p>
+
+                                        </div>
+
+
+                                        <div>
+
+                                            <strong>
+                                                Booking Date
+                                            </strong>
+
+                                            <p>
+                                                {booking.bookingDate
+                                                    ? new Date(
+                                                        booking.bookingDate
+                                                    ).toLocaleString()
+                                                    : "-"}
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* BUTTONS */}
+
+                                    <div
+                                        style={{
+                                            marginTop:
+                                                "20px",
+                                        }}
+                                    >
+
+                                        <button
+                                            onClick={() =>
+                                                navigate(
+                                                    `/booking/${booking.id}`
+                                                )
+                                            }
+                                            style={{
+                                                padding:
+                                                    "10px 18px",
+                                                marginRight:
+                                                    "10px",
+                                                background:
+                                                    "#0066ff",
+                                                color:
+                                                    "white",
+                                                border:
+                                                    "none",
+                                                borderRadius:
+                                                    "6px",
+                                                cursor:
+                                                    "pointer",
+                                            }}
+                                        >
+                                            View Details
+                                        </button>
+
+
+                                        {booking.status ===
+                                            "CONFIRMED" && (
+
+                                            <button
+                                                onClick={() =>
+                                                    handleCancel(
+                                                        booking.id
+                                                    )
+                                                }
+                                                style={{
+                                                    padding:
+                                                        "10px 18px",
+                                                    background:
+                                                        "#dc2626",
+                                                    color:
+                                                        "white",
+                                                    border:
+                                                        "none",
+                                                    borderRadius:
+                                                        "6px",
+                                                    cursor:
+                                                        "pointer",
+                                                }}
+                                            >
+                                                Cancel Booking
+                                            </button>
+
+                                        )}
+
+                                    </div>
+
+                                </div>
+
+                            )
+                        )}
+
+                    </div>
+
+                )}
+
+            </div>
+
+        </div>
+    );
+}
+
+export default MyBookings;

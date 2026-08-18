@@ -1,0 +1,90 @@
+package com.airline.reservation.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.airline.reservation.entity.Flight;
+import com.airline.reservation.service.FlightService;
+
+@RestController
+@RequestMapping("/api/flights")
+@CrossOrigin
+public class FlightController {
+
+	@Autowired
+	private FlightService flightService;
+
+	// ADD FLIGHT
+	@PostMapping
+	public Flight addFlight(@RequestBody Flight flight) {
+
+		return flightService.addFlight(flight);
+	}
+
+	// GET ALL FLIGHTS
+	@GetMapping
+	public List<Flight> getAllFlight() {
+
+		return flightService.getAllFlights();
+	}
+
+	// GET FLIGHT BY ID
+	@GetMapping("/{id}")
+	public ResponseEntity<Flight> getFlightById(@PathVariable Long id) {
+
+		Flight flightById = flightService.getFlightById(id);
+
+		if (flightById == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok(flightById);
+	}
+
+	// SEARCH FLIGHT
+	@GetMapping("/search")
+	public ResponseEntity<List<Flight>> searchFlight(@RequestParam String source, @RequestParam String destination) {
+
+		List<Flight> flights = flightService.searchFlight(source, destination);
+
+		if (flights == null || flights.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok(flights);
+	}
+
+	// UPDATE FLIGHT
+	@PutMapping("/{id}")
+	public ResponseEntity<Flight> updateFlight(@PathVariable Long id, @RequestBody Flight flight) {
+
+		Flight flightById = flightService.updateFlight(id, flight);
+
+		if (flightById == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		return ResponseEntity.ok(flightById);
+	}
+
+	// DELETE FLIGHT
+	@DeleteMapping("/{id}")
+	public ResponseEntity<String> deleteFlight(@PathVariable Long id) {
+
+		flightService.deleteFlight(id);
+
+		return ResponseEntity.ok("Flight deleted successfully");
+	}
+}

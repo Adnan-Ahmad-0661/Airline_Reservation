@@ -1,0 +1,51 @@
+package com.airline.reservation.service;
+
+import java.util.List;
+
+import com.airline.reservation.dto.BookingResponse;
+import com.airline.reservation.entity.Booking;
+
+public interface BookingService {
+
+    // =====================================================
+    // CREATE BOOKING
+    // Passenger ID frontend se nahi aayegi.
+    // Service userId ke basis par Passenger DB se nikalegi.
+    // =====================================================
+
+    Booking createBooking(
+            Long userId,
+            Long flightId,
+            String seatNumber
+    );
+
+    // =====================================================
+    // GET BOOKING BY ID
+    // =====================================================
+
+    BookingResponse getBookingById(Long id);
+
+    // =====================================================
+    // GET ALL BOOKINGS
+    // =====================================================
+
+    List<BookingResponse> getAllBookings();
+
+    // =====================================================
+    // GET BOOKING BY PNR
+    // =====================================================
+
+    BookingResponse getBookingByPnr(String pnr);
+
+    // =====================================================
+    // CANCEL BOOKING
+    // =====================================================
+
+    Booking cancelBooking(Long bookingId);
+
+    // =====================================================
+    // GET ALL BOOKINGS OF USER
+    // =====================================================
+
+    List<BookingResponse> getBookingsByUserId(Long userId);
+}

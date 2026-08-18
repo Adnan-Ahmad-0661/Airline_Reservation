@@ -1,0 +1,22 @@
+package com.airline.reservation.service;
+
+import java.util.List;
+
+import com.airline.reservation.entity.Booking;
+
+public interface BookingService {
+
+    Booking createBooking(
+            Long userId,
+            Long flightId,
+            Long passengerId,
+            String seatNumber);
+
+    Booking getBookingById(Long id);
+
+    List<Booking> getAllBookings();
+
+    Booking getBookingByPnr(String pnr);
+
+    Booking cancelBooking(Long id);
+}

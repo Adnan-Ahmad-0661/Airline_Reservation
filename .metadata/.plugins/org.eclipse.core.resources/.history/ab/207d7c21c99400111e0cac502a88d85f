@@ -1,0 +1,125 @@
+package com.airline.reservation.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.entity.Airport;
+import com.airline.reservation.entity.Flight;
+import com.airline.reservation.repository.AirportRepository;
+import com.airline.reservation.repository.FlightRepository;
+import com.airline.reservation.service.FlightService;
+
+@Service
+public class FlightServiceImpl implements FlightService {
+
+	@Autowired
+	private FlightRepository flightRepository;
+
+	
+	@Autowired
+	private AirportRepository airportRepository;
+
+	@Override
+	public Flight addFlight(Flight flight) {
+
+		Long sourceId = flight.getSourceAirport().getId();
+		Long destinationId = flight.getDestinationAirport().getId();
+
+		Airport sourceAirport = airportRepository.findById(sourceId).orElse(null);
+
+		Airport destinationAirport = airportRepository.findById(destinationId).orElse(null);
+
+		if (sourceAirport == null) {
+			throw new RuntimeException("Source airport not found: " + sourceId);
+		}
+
+		if (destinationAirport == null) {
+			throw new RuntimeException("Destination airport not found: " + destinationId);
+		}
+
+		flight.setSourceAirport(sourceAirport);
+		flight.setDestinationAirport(destinationAirport);
+
+		return flightRepository.save(flight);
+	}
+
+	@Override
+	public Flight getFlightById(Long id) {
+		return flightRepository.findById(id).orElse(null);
+	}
+
+	@Override
+	public List<Flight> getAllFlights() {
+		return flightRepository.findAll();
+
+	}
+
+	@SuppressWarnings("deprecation")
+
+	@Override
+	public Flight updateFlight(Long id, Flight flight) {
+
+		Flight existingFlight = flightRepository.findById(id).orElse(null);
+
+		if (existingFlight == null) {
+			return null;
+		}
+		existingFlight.setFlightNumber(flight.getFlightNumber());
+		existingFlight.setAirlineName(flight.getAirlineName());
+
+		existingFlight.setPrice(flight.getPrice());
+
+		existingFlight.setAvailableSeats(flight.getAvailableSeats());
+
+		existingFlight.setTotalSeats(flight.getTotalSeats());
+
+		existingFlight.setSourceAirport(flight.getSourceAirport());
+
+		existingFlight.setDestinationAirport(flight.getDestinationAirport());
+
+		
+		
+		System.out.println("PRICE = " + flight.getPrice());
+		System.out.println("AVAILABLE = " + flight.getAvailableSeats());
+		System.out.println("TOTAL = " + flight.getTotalSeats());
+
+		System.out.println("EXISTING PRICE = " + existingFlight.getPrice());
+		System.out.println("EXISTING TOTAL = " + existingFlight.getTotalSeats());
+		
+		return flightRepository.save(existingFlight);
+	}
+
+	@Override
+	public void deleteFlight(Long id) {
+		flightRepository.deleteById(id);
+	}
+
+	@Override
+	public List<Flight> searchFlight(String sourceCode, String destinationCode) {
+		Airport source = airportRepository.findByAirportCode(sourceCode);
+
+		Airport destination = airportRepository.findByAirportCode(destinationCode);
+
+		if (source == null || destination == null) {
+			return null;
+		}
+
+		return flightRepository.findBySourceAirportAndDestinationAirport(source, destination);
+
+	}
+	
+	@Override
+	public List<Flight> searchFlights(
+	        String source,
+	        String destination) {
+
+	    return flightRepository
+	            .findBySourceAirportAirportCodeAndDestinationAirportAirportCode(
+	                    source,
+	                    destination);
+	}
+	
+
+}

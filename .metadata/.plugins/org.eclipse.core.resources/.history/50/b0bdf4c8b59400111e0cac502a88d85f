@@ -1,0 +1,264 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+function Booking() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const flight = location.state?.flight;
+  const from = location.state?.from;
+  const to = location.state?.to;
+  const travelDate = location.state?.travelDate;
+  const passengers = Number(location.state?.passengers) || 1;
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const handleContinue = () => {
+    if (!name || !email || !phone) {
+      alert("Please fill all passenger details");
+      return;
+    }
+
+    navigate("/seat-selection", {
+      state: {
+        flight,
+        from,
+        to,
+        travelDate,
+        passengers,
+        passengerName: name,
+        email,
+        phone,
+      },
+    });
+  };
+
+  if (!flight) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "12px",
+            textAlign: "center",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h1>No Flight Selected</h1>
+
+          <p>Please search and select a flight first.</p>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              marginTop: "20px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "0 auto 30px",
+        }}
+      >
+        <h1>Passenger Details</h1>
+
+        <p>
+          Enter passenger information to continue your booking.
+        </p>
+      </div>
+
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "auto",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "25px",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "30px",
+            borderRadius: "12px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>Flight Details</h2>
+
+          <hr />
+
+          <p>
+            <strong>Airline:</strong> {flight.airline}
+          </p>
+
+          <p>
+            <strong>Flight Number:</strong> {flight.flightNumber}
+          </p>
+
+          <p>
+            <strong>Route:</strong> {from} → {to}
+          </p>
+
+          <p>
+            <strong>Travel Date:</strong> {travelDate}
+          </p>
+
+          <p>
+            <strong>Departure:</strong> {flight.departure}
+          </p>
+
+          <p>
+            <strong>Arrival:</strong> {flight.arrival}
+          </p>
+
+          <p>
+            <strong>Passengers:</strong> {passengers}
+          </p>
+
+          <hr />
+
+          <h2>₹{flight.price * passengers}</h2>
+
+          <p>Total Price</p>
+        </div>
+
+        <div
+          style={{
+            background: "white",
+            padding: "30px",
+            borderRadius: "12px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>Passenger Information</h2>
+
+          <hr />
+
+          <div style={{ marginBottom: "20px" }}>
+            <label>Full Name</label>
+
+            <input
+              type="text"
+              placeholder="Enter full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <label>Email</label>
+
+            <input
+              type="email"
+              placeholder="Enter email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "25px" }}>
+            <label>Phone Number</label>
+
+            <input
+              type="tel"
+              placeholder="Enter phone number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 20px",
+              marginRight: "10px",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              background: "#e5e7eb",
+            }}
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleContinue}
+            style={{
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Booking;

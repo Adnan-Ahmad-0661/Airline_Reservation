@@ -1,0 +1,157 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+function Login() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      alert("Please enter email and password");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Invalid email or password");
+      }
+
+      const data = await response.json();
+
+      localStorage.setItem("userId", data.userId);
+      localStorage.setItem("userName", data.name);
+      localStorage.setItem("userEmail", data.email);
+      localStorage.setItem("userRole", data.role);
+
+      alert("Login successful!");
+
+      navigate("/");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          width: "400px",
+          background: "white",
+          padding: "35px",
+          borderRadius: "12px",
+          boxShadow: "0 3px 15px rgba(0,0,0,0.1)",
+        }}
+      >
+        <h1 style={{ textAlign: "center" }}>Login</h1>
+
+        <p
+          style={{
+            textAlign: "center",
+            color: "#666",
+            marginBottom: "30px",
+          }}
+        >
+          Login to your airline reservation account
+        </p>
+
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: "20px" }}>
+            <label>Email</label>
+
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                boxSizing: "border-box",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "25px" }}>
+            <label>Password</label>
+
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                boxSizing: "border-box",
+                border: "1px solid #ccc",
+                borderRadius: "6px",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              padding: "13px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            Login
+          </button>
+        </form>
+
+        <button
+          onClick={() => navigate("/")}
+          style={{
+            width: "100%",
+            padding: "12px",
+            marginTop: "12px",
+            background: "#e5e7eb",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          Back to Home
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default Login;

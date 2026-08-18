@@ -1,0 +1,64 @@
+package com.airline.reservation.service.impl;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.dto.LoginRequest;
+import com.airline.reservation.dto.LoginResponse;
+import com.airline.reservation.entity.User;
+import com.airline.reservation.repository.UserRepository;
+import com.airline.reservation.security.JwtUtil;
+import com.airline.reservation.service.AuthService;
+
+@Service
+public class AuthServiceImpl implements AuthService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Override
+    public LoginResponse login(LoginRequest request) {
+
+        System.out.println("EMAIL: " + request.getEmail());
+
+        User user = userRepository.findByEmail(request.getEmail());
+
+        if (user == null) {
+            throw new RuntimeException("USER NOT FOUND");
+        }
+
+        System.out.println("USER ID: " + user.getId());
+        System.out.println("USER NAME: " + user.getName());
+        System.out.println("USER EMAIL: " + user.getEmail());
+        System.out.println("USER ROLE: " + user.getRole());
+
+        // BCrypt password verification
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPassword())) {
+
+            throw new RuntimeException("WRONG PASSWORD");
+        }
+
+        // Generate JWT token
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole()
+        );
+
+        // Return login response
+        return new LoginResponse(
+                token,
+                user.getRole(),
+                user.getId(),
+                user.getName()
+        );
+    }
+}

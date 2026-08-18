@@ -1,0 +1,367 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+function Login() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    if (!email.trim() || !password.trim()) {
+      alert("Please enter email and password");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        "http://localhost:8080/api/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email.trim(),
+            password: password,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        throw new Error(
+          errorText || "Invalid email or password"
+        );
+      }
+
+      const data = await response.json();
+
+      console.log("================================");
+      console.log("LOGIN RESPONSE:", data);
+      console.log("ROLE:", data.role);
+      console.log("TOKEN:", data.token);
+      console.log("================================");
+
+      // =====================================================
+      // CHECK TOKEN
+      // =====================================================
+
+      if (!data.token) {
+        throw new Error(
+          "Login successful but JWT token was not received."
+        );
+      }
+
+      // =====================================================
+      // GET ROLE
+      // =====================================================
+
+      const role =
+        data.role
+          ? String(data.role).toUpperCase()
+          : "";
+
+      // =====================================================
+      // SAVE JWT TOKEN
+      // =====================================================
+
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+
+      // =====================================================
+      // SAVE USER DETAILS
+      // =====================================================
+
+      localStorage.setItem(
+        "userId",
+        data.userId ?? ""
+      );
+
+      localStorage.setItem(
+        "userName",
+        data.name ?? ""
+      );
+
+      localStorage.setItem(
+        "userEmail",
+        data.email ?? email.trim()
+      );
+
+      localStorage.setItem(
+        "userRole",
+        role
+      );
+
+      // =====================================================
+      // SAVE USER OBJECT
+      // =====================================================
+
+      const user = {
+        userId: data.userId,
+        name: data.name,
+        email: data.email ?? email.trim(),
+        role: role,
+      };
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
+
+      console.log(
+        "TOKEN SAVED"
+      );
+
+      console.log(
+        "USER ROLE:",
+        role
+      );
+
+      // =====================================================
+      // LOGIN SUCCESS
+      // =====================================================
+
+      alert("Login successful!");
+
+      // =====================================================
+      // ADMIN LOGIN
+      // =====================================================
+
+      if (role === "ADMIN") {
+
+        console.log(
+          "Admin login detected."
+        );
+
+        navigate(
+          "/admin/dashboard"
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // NORMAL USER LOGIN
+      // =====================================================
+
+      console.log(
+        "Normal user login detected."
+      );
+
+      navigate("/");
+
+    } catch (error) {
+
+      console.error(
+        "LOGIN ERROR:",
+        error
+      );
+
+      alert(
+        error.message ||
+        "Login failed"
+      );
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "Arial, sans-serif",
+        padding: "20px",
+      }}
+    >
+
+      <div
+        style={{
+          width: "400px",
+          maxWidth: "100%",
+          background: "white",
+          padding: "35px",
+          borderRadius: "12px",
+          boxShadow:
+            "0 3px 15px rgba(0,0,0,0.1)",
+        }}
+      >
+
+        {/* =================================================
+            TITLE
+        ================================================= */}
+
+        <h1
+          style={{
+            textAlign: "center",
+            marginBottom: "10px",
+          }}
+        >
+          Login
+        </h1>
+
+        <p
+          style={{
+            textAlign: "center",
+            color: "#666",
+            marginBottom: "30px",
+          }}
+        >
+          Login to your airline reservation account
+        </p>
+
+        {/* =================================================
+            LOGIN FORM
+        ================================================= */}
+
+        <form onSubmit={handleLogin}>
+
+          {/* EMAIL */}
+
+          <div
+            style={{
+              marginBottom: "20px",
+            }}
+          >
+
+            <label>
+              <strong>
+                Email
+              </strong>
+            </label>
+
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #ccc",
+                borderRadius: "6px",
+              }}
+            />
+
+          </div>
+
+          {/* PASSWORD */}
+
+          <div
+            style={{
+              marginBottom: "25px",
+            }}
+          >
+
+            <label>
+              <strong>
+                Password
+              </strong>
+            </label>
+
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "8px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #ccc",
+                borderRadius: "6px",
+              }}
+            />
+
+          </div>
+
+          {/* LOGIN BUTTON */}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "13px",
+              background:
+                loading
+                  ? "#999"
+                  : "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor:
+                loading
+                  ? "not-allowed"
+                  : "pointer",
+              fontWeight: "bold",
+              fontSize: "16px",
+            }}
+          >
+            {loading
+              ? "Logging in..."
+              : "Login"}
+          </button>
+
+        </form>
+
+        {/* =================================================
+            BACK BUTTON
+        ================================================= */}
+
+        <button
+          type="button"
+          onClick={() =>
+            navigate("/")
+          }
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "12px",
+            marginTop: "12px",
+            background: "#e5e7eb",
+            border: "none",
+            borderRadius: "6px",
+            cursor:
+              loading
+                ? "not-allowed"
+                : "pointer",
+          }}
+        >
+          Back to Home
+        </button>
+
+      </div>
+
+    </div>
+  );
+}
+
+export default Login;

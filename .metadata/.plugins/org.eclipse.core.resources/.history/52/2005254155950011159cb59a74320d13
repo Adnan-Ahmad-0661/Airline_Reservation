@@ -1,0 +1,450 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+const API_URL = "http://localhost:8080";
+
+function Booking() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // SearchResult se flight aa rahi hai
+  const flight = location.state?.flight;
+  const from = location.state?.from;
+  const to = location.state?.to;
+  const travelDate = location.state?.travelDate;
+  const passengers = Number(location.state?.passengers) || 1;
+
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [passportNumber, setPassportNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // =========================================
+  // DEBUG - FLIGHT CHECK
+  // =========================================
+
+  console.log("=================================");
+  console.log("FLIGHT OBJECT:", flight);
+  console.log("FLIGHT ID:", flight?.id);
+  console.log("FLIGHT NUMBER:", flight?.flightNumber);
+  console.log("=================================");
+
+  // =========================================
+  // CONTINUE
+  // =========================================
+
+  const handleContinue = async () => {
+    // Passenger validation
+    if (!name || !age || !gender || !passportNumber) {
+      alert("Please fill all passenger details");
+      return;
+    }
+
+    // User ID
+    const userId = localStorage.getItem("userId");
+
+    if (!userId) {
+      alert("Please login first");
+      navigate("/login");
+      return;
+    }
+
+    // Flight check
+    if (!flight || !flight.id) {
+      console.error("Flight object missing:", flight);
+
+      alert("Flight ID not found. Please select flight again.");
+      return;
+    }
+
+    console.log("Booking Flight ID:", flight.id);
+
+    try {
+      setLoading(true);
+
+      // =========================================
+      // 1. CREATE PASSENGER
+      // =========================================
+
+      const passengerResponse = await fetch(
+        `${API_URL}/api/passengers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            age: Number(age),
+            gender: gender,
+            passportNumber: passportNumber,
+          }),
+        }
+      );
+
+      if (!passengerResponse.ok) {
+        const errorText = await passengerResponse.text();
+
+        console.error(
+          "Passenger API Error:",
+          errorText
+        );
+
+        throw new Error(
+          "Passenger creation failed"
+        );
+      }
+
+      const passenger =
+        await passengerResponse.json();
+
+      console.log(
+        "Passenger created:",
+        passenger
+      );
+
+      // =========================================
+      // 2. GO TO SEAT SELECTION
+      // =========================================
+
+      navigate("/seat-selection", {
+        state: {
+          flight: flight,
+
+          from: from,
+          to: to,
+          travelDate: travelDate,
+          passengers: passengers,
+
+          userId: Number(userId),
+
+          passengerId: passenger.id,
+          passengerName: passenger.name,
+          passengerAge: passenger.age,
+          passengerGender: passenger.gender,
+          passportNumber:
+            passenger.passportNumber,
+        },
+      });
+
+    } catch (error) {
+      console.error(
+        "Booking error:",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Unable to save passenger details"
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================================
+  // NO FLIGHT
+  // =========================================
+
+  if (!flight) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "12px",
+            textAlign: "center",
+            boxShadow:
+              "0 3px 15px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h2>No Flight Selected</h2>
+
+          <p>
+            Please search and select a flight first.
+          </p>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================
+  // TOTAL PRICE
+  // =========================================
+
+  const totalPrice =
+    Number(flight.price || 0) *
+    passengers;
+
+  // =========================================
+  // UI
+  // =========================================
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "0 auto 30px",
+        }}
+      >
+        <h1>Passenger Details</h1>
+
+        <p>
+          Enter passenger information to
+          continue your booking.
+        </p>
+      </div>
+
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "auto",
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "25px",
+        }}
+      >
+
+        {/* =================================
+            FLIGHT DETAILS
+        ================================= */}
+
+        <div
+          style={{
+            background: "white",
+            padding: "30px",
+            borderRadius: "12px",
+            boxShadow:
+              "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>Flight Details</h2>
+
+          <hr />
+
+          <p>
+            <strong>Flight ID:</strong>{" "}
+            {flight.id}
+          </p>
+
+          <p>
+            <strong>Airline:</strong>{" "}
+            {flight.airlineName ||
+              flight.airline}
+          </p>
+
+          <p>
+            <strong>Flight Number:</strong>{" "}
+            {flight.flightNumber}
+          </p>
+
+          <p>
+            <strong>Route:</strong>{" "}
+            {from} → {to}
+          </p>
+
+          <p>
+            <strong>Travel Date:</strong>{" "}
+            {travelDate}
+          </p>
+
+          <p>
+            <strong>Passengers:</strong>{" "}
+            {passengers}
+          </p>
+
+          <hr />
+
+          <h2>
+            ₹{totalPrice}
+          </h2>
+
+          <p>Total Price</p>
+        </div>
+
+        {/* =================================
+            PASSENGER FORM
+        ================================= */}
+
+        <div
+          style={{
+            background: "white",
+            padding: "30px",
+            borderRadius: "12px",
+            boxShadow:
+              "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>Passenger Information</h2>
+
+          <hr />
+
+          {/* NAME */}
+
+          <label>Full Name</label>
+
+          <input
+            type="text"
+            placeholder="Enter full name"
+            value={name}
+            onChange={(e) =>
+              setName(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              margin: "8px 0 20px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          {/* AGE */}
+
+          <label>Age</label>
+
+          <input
+            type="number"
+            placeholder="Enter age"
+            value={age}
+            onChange={(e) =>
+              setAge(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              margin: "8px 0 20px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          {/* GENDER */}
+
+          <label>Gender</label>
+
+          <select
+            value={gender}
+            onChange={(e) =>
+              setGender(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              margin: "8px 0 20px",
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="">
+              Select Gender
+            </option>
+
+            <option value="MALE">
+              Male
+            </option>
+
+            <option value="FEMALE">
+              Female
+            </option>
+
+            <option value="OTHER">
+              Other
+            </option>
+          </select>
+
+          {/* PASSPORT */}
+
+          <label>Passport Number</label>
+
+          <input
+            type="text"
+            placeholder="Enter passport number"
+            value={passportNumber}
+            onChange={(e) =>
+              setPassportNumber(
+                e.target.value
+              )
+            }
+            style={{
+              width: "100%",
+              padding: "12px",
+              margin: "8px 0 25px",
+              boxSizing: "border-box",
+            }}
+          />
+
+          {/* BUTTONS */}
+
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              padding: "12px 20px",
+              marginRight: "10px",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Back
+          </button>
+
+          <button
+            onClick={handleContinue}
+            disabled={loading}
+            style={{
+              padding: "12px 25px",
+              background: loading
+                ? "#999"
+                : "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: loading
+                ? "not-allowed"
+                : "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            {loading
+              ? "Saving..."
+              : "Continue"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Booking;

@@ -1,0 +1,1093 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+function Booking() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // =====================================================
+  // LOGIN CHECK
+  // =====================================================
+
+  const token = localStorage.getItem("token");
+
+  // =====================================================
+  // FLIGHT DATA
+  // =====================================================
+
+  const flight = location.state?.flight;
+
+  const from = location.state?.from || "";
+  const to = location.state?.to || "";
+  const travelDate = location.state?.travelDate || "";
+
+  const passengers =
+    Number(location.state?.passengers) || 1;
+
+  // =====================================================
+  // PASSENGER STATES
+  // =====================================================
+
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
+  const [passportNumber, setPassportNumber] = useState("");
+
+  // =====================================================
+  // OTHER STATES
+  // =====================================================
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // =====================================================
+  // DIRECT ACCESS PROTECTION
+  // =====================================================
+
+  if (!token) {
+    navigate("/login", { replace: true });
+    return null;
+  }
+
+  // =====================================================
+  // CONTINUE BUTTON
+  // =====================================================
+
+  const handleContinue = async () => {
+    setError("");
+
+    // ---------------------------------------------------
+    // CHECK LOGIN
+    // ---------------------------------------------------
+
+    const currentToken =
+      localStorage.getItem("token");
+
+    if (!currentToken) {
+      alert("Please login first.");
+
+      navigate("/login");
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // CHECK FLIGHT
+    // ---------------------------------------------------
+
+    if (!flight || !flight.id) {
+      alert("Flight information is missing.");
+
+      navigate("/");
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // NAME
+    // ---------------------------------------------------
+
+    if (!name.trim()) {
+      alert("Please enter passenger name.");
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // AGE
+    // ---------------------------------------------------
+
+    if (!age) {
+      alert("Please enter passenger age.");
+
+      return;
+    }
+
+    if (
+      Number(age) <= 0 ||
+      Number(age) > 120
+    ) {
+      alert("Please enter a valid age.");
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // GENDER
+    // ---------------------------------------------------
+
+    if (!gender) {
+      alert("Please select gender.");
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // PASSPORT
+    // ---------------------------------------------------
+
+    if (!passportNumber.trim()) {
+      alert("Please enter passport number.");
+
+      return;
+    }
+
+    // ===================================================
+    // CREATE PASSENGER
+    // ===================================================
+
+    try {
+      setLoading(true);
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "CREATING PASSENGER"
+      );
+
+      console.log(
+        "Flight ID:",
+        flight.id
+      );
+
+      console.log(
+        "Passenger Name:",
+        name
+      );
+
+      console.log(
+        "Age:",
+        age
+      );
+
+      console.log(
+        "Gender:",
+        gender
+      );
+
+      console.log(
+        "Passport:",
+        passportNumber
+      );
+
+      console.log(
+        "================================="
+      );
+
+      // -------------------------------------------------
+      // PASSENGER API
+      // -------------------------------------------------
+
+      const response = await fetch(
+        "http://localhost:8080/api/passengers",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+
+            Authorization:
+              `Bearer ${currentToken}`,
+          },
+
+          body: JSON.stringify({
+            name: name.trim(),
+
+            age: Number(age),
+
+            gender: gender,
+
+            passportNumber:
+              passportNumber
+                .trim()
+                .toUpperCase(),
+          }),
+        }
+      );
+
+      // -------------------------------------------------
+      // READ RESPONSE
+      // -------------------------------------------------
+
+      const responseText =
+        await response.text();
+
+      console.log(
+        "Passenger API Status:",
+        response.status
+      );
+
+      console.log(
+        "Passenger API Response:",
+        responseText
+      );
+
+      // -------------------------------------------------
+      // UNAUTHORIZED
+      // -------------------------------------------------
+
+      if (
+        response.status === 401 ||
+        response.status === 403
+      ) {
+        localStorage.removeItem("token");
+
+        alert(
+          "Your login session has expired. Please login again."
+        );
+
+        navigate("/login");
+
+        return;
+      }
+
+      // -------------------------------------------------
+      // OTHER ERROR
+      // -------------------------------------------------
+
+      if (!response.ok) {
+        throw new Error(
+          responseText ||
+          "Unable to create passenger."
+        );
+      }
+
+      // -------------------------------------------------
+      // PARSE PASSENGER
+      // -------------------------------------------------
+
+      let passenger;
+
+      try {
+        passenger =
+          JSON.parse(responseText);
+      } catch (parseError) {
+        console.error(
+          "Passenger JSON Parse Error:",
+          parseError
+        );
+
+        throw new Error(
+          "Invalid response received from passenger API.",  { cause: error }, { cause: error }, { cause: error }, { cause: error }
+        );
+      }
+
+      // -------------------------------------------------
+      // PASSENGER ID CHECK
+      // -------------------------------------------------
+
+      if (
+        !passenger ||
+        !passenger.id
+      ) {
+        console.error(
+          "Passenger Response:",
+          passenger
+        );
+
+        throw new Error(
+          "Passenger was created but passenger ID was not received."
+        );
+      }
+
+      const passengerId =
+        Number(passenger.id);
+
+      console.log(
+        "Passenger Created:",
+        passenger
+      );
+
+      console.log(
+        "Passenger ID:",
+        passengerId
+      );
+
+      // =================================================
+      // GO TO SEAT SELECTION
+      // =================================================
+
+      navigate(
+        "/seat-selection",
+        {
+          state: {
+            // FLIGHT
+            flight: flight,
+
+            flightId:
+              Number(flight.id),
+
+            // ROUTE
+            from: from,
+
+            to: to,
+
+            // DATE
+            travelDate:
+              travelDate,
+
+            // PASSENGERS
+            passengers:
+              passengers,
+
+            // PASSENGER
+            passengerId:
+              passengerId,
+
+            passengerName:
+              passenger.name,
+
+            passengerAge:
+              passenger.age,
+
+            passengerGender:
+              passenger.gender,
+
+            passportNumber:
+              passenger.passportNumber,
+          },
+        }
+      );
+
+    } catch (error) {
+      console.error(
+        "Passenger Creation Error:",
+        error
+      );
+
+      const message =
+        error?.message ||
+        "Unable to create passenger.";
+
+      setError(message);
+
+      alert(message);
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================================
+  // NO FLIGHT
+  // =====================================================
+
+  if (!flight) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily:
+            "Arial, sans-serif",
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "15px",
+            textAlign: "center",
+            boxShadow:
+              "0 5px 20px rgba(0,0,0,0.1)",
+            maxWidth: "450px",
+            width: "100%",
+          }}
+        >
+          <h2>
+            No Flight Selected
+          </h2>
+
+          <p
+            style={{
+              color: "#666",
+              marginBottom: "25px",
+            }}
+          >
+            Please search and select a
+            flight first.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate("/")
+            }
+            style={{
+              padding:
+                "12px 25px",
+              background:
+                "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // TOTAL PRICE
+  // =====================================================
+
+  const totalPrice =
+    Number(flight.price || 0) *
+    passengers;
+
+  // =====================================================
+  // MAIN UI
+  // =====================================================
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, #eef4ff, #f8fafc)",
+        padding: "40px 20px",
+        fontFamily:
+          "Arial, sans-serif",
+      }}
+    >
+
+      {/* =================================================
+          HEADER
+      ================================================= */}
+
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin:
+            "0 auto 25px",
+        }}
+      >
+        <h1
+          style={{
+            marginBottom:
+              "8px",
+          }}
+        >
+          Passenger Details
+        </h1>
+
+        <p
+          style={{
+            color: "#666",
+          }}
+        >
+          Enter passenger information
+          to continue your booking.
+        </p>
+
+        {error && (
+          <div
+            style={{
+              marginTop: "15px",
+              padding: "14px",
+              background:
+                "#fee2e2",
+              color:
+                "#b91c1c",
+              borderRadius: "8px",
+              fontWeight:
+                "bold",
+            }}
+          >
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* =================================================
+          MAIN
+      ================================================= */}
+
+      <div
+        style={{
+          maxWidth: "1100px",
+          margin: "auto",
+
+          display: "grid",
+
+          gridTemplateColumns:
+            "1fr 1fr",
+
+          gap: "25px",
+        }}
+      >
+
+        {/* =================================================
+            FLIGHT DETAILS
+        ================================================= */}
+
+        <div
+          style={{
+            background:
+              "white",
+
+            padding:
+              "30px",
+
+            borderRadius:
+              "15px",
+
+            boxShadow:
+              "0 5px 20px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>
+            ✈ Flight Details
+          </h2>
+
+          <hr />
+
+          <div
+            style={{
+              marginTop:
+                "20px",
+            }}
+          >
+
+            <p>
+              <strong>
+                Airline:
+              </strong>{" "}
+              {flight.airlineName ||
+                flight.airline ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                Flight Number:
+              </strong>{" "}
+              {flight.flightNumber ||
+                flight.flightNo ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                From:
+              </strong>{" "}
+              {flight.source ||
+                from ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                To:
+              </strong>{" "}
+              {flight.destination ||
+                to ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                Departure:
+              </strong>{" "}
+              {flight.departureTime ||
+                flight.departure ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                Arrival:
+              </strong>{" "}
+              {flight.arrivalTime ||
+                flight.arrival ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                Travel Date:
+              </strong>{" "}
+              {travelDate ||
+                "-"}
+            </p>
+
+            <p>
+              <strong>
+                Passengers:
+              </strong>{" "}
+              {passengers}
+            </p>
+
+            <p>
+              <strong>
+                Available Seats:
+              </strong>{" "}
+              {flight.availableSeats ??
+                flight.seatsAvailable ??
+                0}
+            </p>
+
+          </div>
+
+          <hr />
+
+          {/* TOTAL FARE */}
+
+          <div
+            style={{
+              marginTop:
+                "20px",
+
+              padding:
+                "18px",
+
+              background:
+                "#f0f7ff",
+
+              borderRadius:
+                "10px",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                color: "#555",
+              }}
+            >
+              Total Fare
+            </p>
+
+            <h2
+              style={{
+                margin:
+                  "5px 0 0",
+
+                color:
+                  "#0066ff",
+              }}
+            >
+              ₹{totalPrice}
+            </h2>
+          </div>
+
+        </div>
+
+        {/* =================================================
+            PASSENGER INFORMATION
+        ================================================= */}
+
+        <div
+          style={{
+            background:
+              "white",
+
+            padding:
+              "30px",
+
+            borderRadius:
+              "15px",
+
+            boxShadow:
+              "0 5px 20px rgba(0,0,0,0.08)",
+          }}
+        >
+
+          <h2>
+            👤 Passenger Information
+          </h2>
+
+          <p
+            style={{
+              color:
+                "#666",
+
+              fontSize:
+                "14px",
+            }}
+          >
+            Please enter the passenger
+            details exactly as shown on
+            the travel document.
+          </p>
+
+          <hr />
+
+          {/* =================================================
+              NAME
+          ================================================= */}
+
+          <label
+            style={{
+              display:
+                "block",
+
+              marginTop:
+                "20px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Full Name
+          </label>
+
+          <input
+            type="text"
+
+            placeholder=
+              "Enter passenger full name"
+
+            value={name}
+
+            onChange={(e) =>
+              setName(
+                e.target.value
+              )
+            }
+
+            style={{
+              width:
+                "100%",
+
+              padding:
+                "13px",
+
+              marginTop:
+                "8px",
+
+              boxSizing:
+                "border-box",
+
+              border:
+                "1px solid #d1d5db",
+
+              borderRadius:
+                "8px",
+
+              outline:
+                "none",
+            }}
+          />
+
+          {/* =================================================
+              AGE
+          ================================================= */}
+
+          <label
+            style={{
+              display:
+                "block",
+
+              marginTop:
+                "18px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Age
+          </label>
+
+          <input
+            type="number"
+
+            min="1"
+
+            max="120"
+
+            placeholder=
+              "Enter age"
+
+            value={age}
+
+            onChange={(e) =>
+              setAge(
+                e.target.value
+              )
+            }
+
+            style={{
+              width:
+                "100%",
+
+              padding:
+                "13px",
+
+              marginTop:
+                "8px",
+
+              boxSizing:
+                "border-box",
+
+              border:
+                "1px solid #d1d5db",
+
+              borderRadius:
+                "8px",
+
+              outline:
+                "none",
+            }}
+          />
+
+          {/* =================================================
+              GENDER
+          ================================================= */}
+
+          <label
+            style={{
+              display:
+                "block",
+
+              marginTop:
+                "18px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Gender
+          </label>
+
+          <select
+            value={gender}
+
+            onChange={(e) =>
+              setGender(
+                e.target.value
+              )
+            }
+
+            style={{
+              width:
+                "100%",
+
+              padding:
+                "13px",
+
+              marginTop:
+                "8px",
+
+              boxSizing:
+                "border-box",
+
+              border:
+                "1px solid #d1d5db",
+
+              borderRadius:
+                "8px",
+
+              background:
+                "white",
+
+              outline:
+                "none",
+            }}
+          >
+
+            <option value="">
+              Select Gender
+            </option>
+
+            <option value="MALE">
+              Male
+            </option>
+
+            <option value="FEMALE">
+              Female
+            </option>
+
+            <option value="OTHER">
+              Other
+            </option>
+
+          </select>
+
+          {/* =================================================
+              PASSPORT
+          ================================================= */}
+
+          <label
+            style={{
+              display:
+                "block",
+
+              marginTop:
+                "18px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Passport Number
+          </label>
+
+          <input
+            type="text"
+
+            placeholder=
+              "Enter passport number"
+
+            value={
+              passportNumber
+            }
+
+            onChange={(e) =>
+              setPassportNumber(
+                e.target.value.toUpperCase()
+              )
+            }
+
+            style={{
+              width:
+                "100%",
+
+              padding:
+                "13px",
+
+              marginTop:
+                "8px",
+
+              boxSizing:
+                "border-box",
+
+              border:
+                "1px solid #d1d5db",
+
+              borderRadius:
+                "8px",
+
+              textTransform:
+                "uppercase",
+
+              outline:
+                "none",
+            }}
+          />
+
+          {/* =================================================
+              BUTTONS
+          ================================================= */}
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              gap:
+                "12px",
+
+              marginTop:
+                "28px",
+            }}
+          >
+
+            {/* BACK */}
+
+            <button
+              type="button"
+
+              onClick={() =>
+                navigate(-1)
+              }
+
+              disabled={
+                loading
+              }
+
+              style={{
+                flex: 1,
+
+                padding:
+                  "13px",
+
+                background:
+                  "#e5e7eb",
+
+                border:
+                  "none",
+
+                borderRadius:
+                  "8px",
+
+                cursor:
+                  loading
+                    ? "not-allowed"
+                    : "pointer",
+
+                fontWeight:
+                  "bold",
+              }}
+            >
+              ← Back
+            </button>
+
+            {/* CONTINUE */}
+
+            <button
+              type="button"
+
+              onClick={
+                handleContinue
+              }
+
+              disabled={
+                loading
+              }
+
+              style={{
+                flex: 2,
+
+                padding:
+                  "13px",
+
+                background:
+                  loading
+                    ? "#9ca3af"
+                    : "#0066ff",
+
+                color:
+                  "white",
+
+                border:
+                  "none",
+
+                borderRadius:
+                  "8px",
+
+                cursor:
+                  loading
+                    ? "not-allowed"
+                    : "pointer",
+
+                fontWeight:
+                  "bold",
+              }}
+            >
+              {loading
+                ? "Saving Passenger..."
+                : "Continue to Seat Selection →"}
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+export default Booking;

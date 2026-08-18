@@ -1,0 +1,107 @@
+import org.springframework.security.core.context.SecurityContextHolder;
+
+@Override
+protected void doFilterInternal(
+        HttpServletRequest request,
+        HttpServletResponse response,
+        FilterChain filterChain)
+        throws ServletException, IOException {
+
+    // =========================================
+    // CORS PREFLIGHT REQUEST
+    // =========================================
+
+    if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+
+        System.out.println("OPTIONS REQUEST - CORS PREFLIGHT");
+
+        filterChain.doFilter(request, response);
+        return;
+    }
+
+    // =========================================
+    // GET JWT TOKEN
+    // =========================================
+
+    String authHeader = request.getHeader("Authorization");
+
+    System.out.println("AUTH HEADER: " + authHeader);
+
+    // =========================================
+    // NO TOKEN
+    // =========================================
+
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
+        System.out.println("NO JWT TOKEN FOUND");
+
+        filterChain.doFilter(request, response);
+        return;
+    }
+
+    // =========================================
+    // EXTRACT TOKEN
+    // =========================================
+
+    String token = authHeader.substring(7);
+
+    System.out.println("JWT TOKEN FOUND");
+
+    // =========================================
+    // VALIDATE TOKEN
+    // =========================================
+
+    if (jwtUtil.validateToken(token)) {
+
+        System.out.println("JWT TOKEN VALID");
+
+        String email = jwtUtil.getEmailFromToken(token);
+        String role = jwtUtil.getRoleFromToken(token);
+
+        System.out.println("EMAIL FROM TOKEN: " + email);
+        System.out.println("ROLE FROM TOKEN: " + role);
+
+        // =========================================
+        // CREATE AUTHORITY
+        // =========================================
+
+        SimpleGrantedAuthority authority =
+                new SimpleGrantedAuthority("ROLE_" + role);
+
+        // =========================================
+        // CREATE AUTHENTICATION
+        // =========================================
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singletonList(authority)
+                );
+
+        // =========================================
+        // SET SECURITY CONTEXT
+        // =========================================
+
+        SecurityContextHolder
+                .getContext()
+                .setAuthentication(authentication);
+
+        System.out.println(
+                "AUTHENTICATION SET: "
+                        + SecurityContextHolder
+                                .getContext()
+                                .getAuthentication()
+        );
+
+    } else {
+
+        System.out.println("JWT TOKEN INVALID");
+    }
+
+    // =========================================
+    // CONTINUE FILTER CHAIN
+    // =========================================
+
+    filterChain.doFilter(request, response);
+}

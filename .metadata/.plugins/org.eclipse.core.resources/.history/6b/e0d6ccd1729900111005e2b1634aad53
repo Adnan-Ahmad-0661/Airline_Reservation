@@ -1,0 +1,5 @@
+package com.airline.reservation.repository;
+
+public interface RouteStopRepository {
+
+}

@@ -1,0 +1,86 @@
+package com.airline.reservation.security;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import com.airline.reservation.config.JwtUtil;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Override
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String authHeader = request.getHeader("Authorization");
+
+        System.out.println("AUTH HEADER: " + authHeader);
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("NO JWT TOKEN FOUND");
+
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(7);
+
+        System.out.println("JWT TOKEN FOUND");
+
+        if (jwtUtil.validateToken(token)) {
+
+            System.out.println("JWT TOKEN VALID");
+
+            String email = jwtUtil.getEmailFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
+
+            System.out.println("EMAIL FROM TOKEN: " + email);
+            System.out.println("ROLE FROM TOKEN: " + role);
+
+            SimpleGrantedAuthority authority =
+                    new SimpleGrantedAuthority("ROLE_" + role);
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            Collections.singletonList(authority)
+                    );
+
+            SecurityContextHolder
+                    .getContext()
+                    .setAuthentication(authentication);
+
+            System.out.println(
+                    "AUTHENTICATION SET: "
+                    + SecurityContextHolder
+                        .getContext()
+                        .getAuthentication()
+            );
+
+        } else {
+
+            System.out.println("JWT TOKEN INVALID");
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}

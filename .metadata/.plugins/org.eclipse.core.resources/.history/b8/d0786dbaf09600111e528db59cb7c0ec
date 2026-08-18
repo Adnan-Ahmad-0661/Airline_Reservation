@@ -1,0 +1,33 @@
+package com.airline.reservation.service;
+
+import java.util.List;
+
+import com.airline.reservation.dto.BookingResponse;
+import com.airline.reservation.entity.Booking;
+
+public interface BookingService {
+
+    // Create Booking
+	BookingResponse createBooking(
+	        Long userId,
+	        Long flightId,
+	        Long passengerId,
+	        String seatNumber);
+
+    // Get Booking By ID
+   Booking getBookingById(Long id);
+   
+
+    // Get All Bookings
+
+   List<BookingResponse> getAllBookings();
+   
+    // Get Booking By PNR
+    Booking getBookingByPnr(String pnr);
+
+    // Cancel Booking
+    Booking cancelBooking(Long bookingId);
+
+    // Get All Bookings Of User
+    List<Booking> getBookingsByUserId(Long userId);
+}

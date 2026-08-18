@@ -1,0 +1,147 @@
+```jsx
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Home from "./pages/Home.jsx";
+import Login from "./pages/Login.jsx";
+import Booking from "./pages/Booking.jsx";
+import SeatSelection from "./pages/SeatSelection.jsx";
+import Payment from "./pages/Payment.jsx";
+import Confirmation from "./pages/Confirmation.jsx";
+import MyBookings from "./pages/MyBookings.jsx";
+import ViewTicket from "./pages/ViewTicket.jsx";
+import CreateUser from "./pages/CreateUser.jsx";
+
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminFlights from "./pages/AdminFlights.jsx";
+import FlightManagement from "./pages/FlightManagement.jsx";
+
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+
+        {/* =================================================
+            PUBLIC ROUTES
+        ================================================= */}
+
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/create-user"
+          element={<CreateUser />}
+        />
+
+
+        {/* =================================================
+            NORMAL USER ROUTES
+        ================================================= */}
+
+        <Route
+          path="/booking"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <Booking />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/seat-selection"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <SeatSelection />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/payment"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <Payment />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/confirmation"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <Confirmation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/my-bookings"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <MyBookings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/view-ticket/:bookingId"
+          element={
+            <ProtectedRoute requiredRole="USER">
+              <ViewTicket />
+            </ProtectedRoute>
+          }
+        />
+
+
+        {/* =================================================
+            ADMIN ROUTES
+        ================================================= */}
+
+        {/* ADMIN DASHBOARD */}
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ADMIN FLIGHTS */}
+
+        <Route
+          path="/admin/flights"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <AdminFlights />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* FLIGHT MANAGEMENT */}
+
+        <Route
+          path="/flight-management"
+          element={
+            <ProtectedRoute requiredRole="ADMIN">
+              <FlightManagement />
+            </ProtectedRoute>
+          }
+        />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+```

@@ -1,0 +1,932 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+const API_URL = "http://localhost:8080";
+
+function Payment() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // =====================================================
+  // GET BOOKING DATA
+  // =====================================================
+
+  const bookingData = location.state || {};
+
+  const flight = bookingData.flight || null;
+
+  const flightId = Number(
+    bookingData.flightId ||
+      flight?.id ||
+      0
+  );
+
+  const from =
+    bookingData.from ||
+    flight?.source ||
+    "";
+
+  const to =
+    bookingData.to ||
+    flight?.destination ||
+    "";
+
+  const travelDate =
+    bookingData.travelDate ||
+    "";
+
+  const passengers =
+    Number(bookingData.passengers) || 1;
+
+  const passengerId = Number(
+    bookingData.passengerId || 0
+  );
+
+  const passengerName =
+    bookingData.passengerName || "";
+
+  const passengerAge =
+    bookingData.passengerAge || "";
+
+  const passengerGender =
+    bookingData.passengerGender || "";
+
+  const passportNumber =
+    bookingData.passportNumber || "";
+
+  const selectedSeats = Array.isArray(
+    bookingData.selectedSeats
+  )
+    ? bookingData.selectedSeats
+    : [];
+
+  // =====================================================
+  // PAYMENT STATE
+  // =====================================================
+
+  const [cardName, setCardName] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  // =====================================================
+  // PRICE
+  // =====================================================
+
+  const pricePerSeat = Number(
+    flight?.price || 0
+  );
+
+  const totalPrice =
+    pricePerSeat * selectedSeats.length;
+
+  // =====================================================
+  // DEBUG
+  // =====================================================
+
+  console.log("================================");
+  console.log("PAYMENT PAGE");
+  console.log("Flight:", flight);
+  console.log("Flight ID:", flightId);
+  console.log("Passenger ID:", passengerId);
+  console.log("Passenger:", passengerName);
+  console.log("From:", from);
+  console.log("To:", to);
+  console.log("Travel Date:", travelDate);
+  console.log("Passengers:", passengers);
+  console.log("Selected Seats:", selectedSeats);
+  console.log("Total Price:", totalPrice);
+  console.log("================================");
+
+  // =====================================================
+  // BOOKING DATA CHECK
+  // =====================================================
+
+  if (
+    !flight ||
+    !flightId ||
+    !passengerId ||
+    selectedSeats.length === 0
+  ) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily: "Arial, sans-serif",
+          padding: "20px",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "15px",
+            textAlign: "center",
+            boxShadow:
+              "0 5px 20px rgba(0,0,0,0.10)",
+            maxWidth: "500px",
+            width: "100%",
+          }}
+        >
+          <h2>
+            Booking Information Missing
+          </h2>
+
+          <p
+            style={{
+              color: "#666",
+              marginTop: "10px",
+            }}
+          >
+            Your booking session is incomplete.
+            Please select the flight, passenger
+            and seat again.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            style={{
+              marginTop: "20px",
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // =====================================================
+  // PAYMENT / CREATE BOOKING
+  // =====================================================
+
+  const handlePayment = async () => {
+
+    // ---------------------------------------------------
+    // CARD VALIDATION
+    // ---------------------------------------------------
+
+    if (!cardName.trim()) {
+      alert("Please enter card holder name.");
+      return;
+    }
+
+    if (!cardNumber.trim()) {
+      alert("Please enter card number.");
+      return;
+    }
+
+    if (!expiry.trim()) {
+      alert("Please enter expiry date.");
+      return;
+    }
+
+    if (!cvv.trim()) {
+      alert("Please enter CVV.");
+      return;
+    }
+
+    // ---------------------------------------------------
+    // PASSENGER
+    // ---------------------------------------------------
+
+    if (!passengerId) {
+      alert(
+        "Passenger information is missing. Please enter passenger details again."
+      );
+
+      navigate("/booking", {
+        state: {
+          flight,
+          flightId,
+          from,
+          to,
+          travelDate,
+          passengers,
+        },
+      });
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // FLIGHT
+    // ---------------------------------------------------
+
+    if (!flightId) {
+      alert("Flight information is missing.");
+      return;
+    }
+
+    // ---------------------------------------------------
+    // SEATS
+    // ---------------------------------------------------
+
+    if (selectedSeats.length === 0) {
+      alert("Please select at least one seat.");
+      return;
+    }
+
+    // ---------------------------------------------------
+    // JWT TOKEN
+    // ---------------------------------------------------
+
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first.");
+      navigate("/login");
+      return;
+    }
+
+    // ===================================================
+    // START
+    // ===================================================
+
+    try {
+      setLoading(true);
+
+      console.log(
+        "================================"
+      );
+
+      console.log(
+        "STARTING BOOKING"
+      );
+
+      console.log(
+        "Flight ID:",
+        flightId
+      );
+
+      console.log(
+        "Passenger ID:",
+        passengerId
+      );
+
+      console.log(
+        "Selected Seats:",
+        selectedSeats
+      );
+
+      console.log(
+        "Token exists:",
+        !!token
+      );
+
+      console.log(
+        "================================"
+      );
+
+      const bookings = [];
+
+      // =================================================
+      // CREATE BOOKING FOR EACH SEAT
+      // =================================================
+
+      for (const seat of selectedSeats) {
+
+        console.log(
+          "--------------------------------"
+        );
+
+        console.log(
+          "Booking Seat:",
+          seat
+        );
+
+        // IMPORTANT:
+        // userId intentionally NOT sent.
+        // Backend gets user ID from JWT.
+
+        const url =
+          `${API_URL}/api/bookings` +
+          `?flightId=${encodeURIComponent(
+            flightId
+          )}` +
+          `&passengerId=${encodeURIComponent(
+            passengerId
+          )}` +
+          `&seatNumber=${encodeURIComponent(
+            seat
+          )}`;
+
+        console.log(
+          "Booking URL:",
+          url
+        );
+
+        // =================================================
+        // API CALL
+        // =================================================
+
+        const response =
+          await fetch(url, {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              // VERY IMPORTANT
+              Authorization:
+                `Bearer ${token}`,
+            },
+          });
+
+        const responseText =
+          await response.text();
+
+        console.log(
+          "Booking Status:",
+          response.status
+        );
+
+        console.log(
+          "Booking Response:",
+          responseText
+        );
+
+        // =================================================
+        // 401
+        // =================================================
+
+        if (response.status === 401) {
+
+          localStorage.removeItem("token");
+
+          alert(
+            "Your session has expired. Please login again."
+          );
+
+          navigate("/login");
+
+          return;
+        }
+
+        // =================================================
+        // 403
+        // =================================================
+
+        if (response.status === 403) {
+
+          throw new Error(
+            "Access denied (403). Please login again."
+          );
+        }
+
+        // =================================================
+        // OTHER ERROR
+        // =================================================
+
+        if (!response.ok) {
+
+          throw new Error(
+            responseText ||
+              `Booking failed for seat ${seat}.`
+          );
+        }
+
+        // =================================================
+        // PARSE BOOKING
+        // =================================================
+
+        let booking;
+
+        try {
+
+          booking =
+            JSON.parse(responseText);
+
+        } catch (error) {
+
+          console.error(
+            "Booking JSON Error:",
+            error
+          );
+
+          throw new Error(
+            "Invalid response received from booking API."
+          );
+        }
+
+        console.log(
+          "Booking Created:",
+          booking
+        );
+
+        bookings.push(booking);
+      }
+
+      // ===================================================
+      // ALL BOOKINGS SUCCESS
+      // ===================================================
+
+      console.log(
+        "================================"
+      );
+
+      console.log(
+        "ALL BOOKINGS CREATED"
+      );
+
+      console.log(
+        bookings
+      );
+
+      console.log(
+        "================================"
+      );
+
+      alert(
+        `${selectedSeats.length} seat(s) booked successfully!`
+      );
+
+      // ===================================================
+      // CONFIRMATION
+      // ===================================================
+
+      navigate(
+        "/confirmation",
+        {
+          state: {
+            bookings,
+
+            flight,
+
+            flightId,
+
+            from,
+
+            to,
+
+            travelDate,
+
+            passengers,
+
+            passengerId,
+
+            passengerName,
+
+            passengerAge,
+
+            passengerGender,
+
+            passportNumber,
+
+            selectedSeats,
+
+            pricePerSeat,
+
+            totalPrice,
+          },
+        }
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Payment / Booking Error:",
+        error
+      );
+
+      alert(
+        error.message ||
+          "Payment/Booking failed. Please try again."
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
+  };
+
+  // =====================================================
+  // UI
+  // =====================================================
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, #eef4ff, #f8fafc)",
+        padding: "40px 20px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+
+      <div
+        style={{
+          maxWidth: "1050px",
+          margin: "auto",
+        }}
+      >
+
+        {/* HEADER */}
+
+        <h1>
+          Payment
+        </h1>
+
+        <p
+          style={{
+            color: "#666",
+          }}
+        >
+          Complete your payment to confirm
+          your booking.
+        </p>
+
+        {/* MAIN */}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "1fr 1fr",
+            gap: "25px",
+            marginTop: "30px",
+          }}
+        >
+
+          {/* =================================================
+              BOOKING SUMMARY
+          ================================================= */}
+
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "15px",
+              boxShadow:
+                "0 5px 20px rgba(0,0,0,0.08)",
+            }}
+          >
+
+            <h2>
+              Booking Summary
+            </h2>
+
+            <hr />
+
+            <p>
+              <strong>
+                Passenger:
+              </strong>{" "}
+              {passengerName || "--"}
+            </p>
+
+            <p>
+              <strong>
+                Passenger ID:
+              </strong>{" "}
+              {passengerId}
+            </p>
+
+            <p>
+              <strong>
+                Airline:
+              </strong>{" "}
+              {flight.airlineName ||
+                flight.airline ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                Flight Number:
+              </strong>{" "}
+              {flight.flightNumber ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                Flight ID:
+              </strong>{" "}
+              {flightId}
+            </p>
+
+            <p>
+              <strong>
+                From:
+              </strong>{" "}
+              {from ||
+                flight.source ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                To:
+              </strong>{" "}
+              {to ||
+                flight.destination ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                Departure:
+              </strong>{" "}
+              {flight.departureTime ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                Arrival:
+              </strong>{" "}
+              {flight.arrivalTime ||
+                "--"}
+            </p>
+
+            <p>
+              <strong>
+                Travel Date:
+              </strong>{" "}
+              {travelDate || "--"}
+            </p>
+
+            <p>
+              <strong>
+                Passengers:
+              </strong>{" "}
+              {passengers}
+            </p>
+
+            <hr />
+
+            <p>
+              <strong>
+                Selected Seats:
+              </strong>
+            </p>
+
+            <div
+              style={{
+                background: "#eef4ff",
+                padding: "12px",
+                borderRadius: "8px",
+                marginBottom: "15px",
+                fontWeight: "bold",
+              }}
+            >
+              {selectedSeats.join(", ")}
+            </div>
+
+            <p>
+              <strong>
+                Number of Seats:
+              </strong>{" "}
+              {selectedSeats.length}
+            </p>
+
+            <p>
+              <strong>
+                Price Per Seat:
+              </strong>{" "}
+              ₹{pricePerSeat}
+            </p>
+
+            <hr />
+
+            <div
+              style={{
+                background: "#f0f7ff",
+                padding: "18px",
+                borderRadius: "10px",
+              }}
+            >
+
+              <p
+                style={{
+                  margin: 0,
+                  color: "#666",
+                }}
+              >
+                Total Amount
+              </p>
+
+              <h2
+                style={{
+                  margin: "5px 0 0",
+                  color: "#0066ff",
+                }}
+              >
+                ₹{totalPrice}
+              </h2>
+
+            </div>
+
+          </div>
+
+
+          {/* =================================================
+              PAYMENT FORM
+          ================================================= */}
+
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "15px",
+              boxShadow:
+                "0 5px 20px rgba(0,0,0,0.08)",
+            }}
+          >
+
+            <h2>
+              Payment Details
+            </h2>
+
+            <hr />
+
+            {/* CARD HOLDER */}
+
+            <label>
+              <strong>
+                Card Holder Name
+              </strong>
+            </label>
+
+            <input
+              type="text"
+              placeholder="Enter card holder name"
+              value={cardName}
+              onChange={(e) =>
+                setCardName(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "13px",
+                margin: "8px 0 20px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #d1d5db",
+                borderRadius: "8px",
+              }}
+            />
+
+            {/* CARD NUMBER */}
+
+            <label>
+              <strong>
+                Card Number
+              </strong>
+            </label>
+
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={19}
+              placeholder="1234 5678 9012 3456"
+              value={cardNumber}
+              onChange={(e) =>
+                setCardNumber(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "13px",
+                margin: "8px 0 20px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #d1d5db",
+                borderRadius: "8px",
+              }}
+            />
+
+            {/* EXPIRY */}
+
+            <label>
+              <strong>
+                Expiry Date
+              </strong>
+            </label>
+
+            <input
+              type="text"
+              placeholder="MM/YY"
+              maxLength={5}
+              value={expiry}
+              onChange={(e) =>
+                setExpiry(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "13px",
+                margin: "8px 0 20px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #d1d5db",
+                borderRadius: "8px",
+              }}
+            />
+
+            {/* CVV */}
+
+            <label>
+              <strong>
+                CVV
+              </strong>
+            </label>
+
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="123"
+              value={cvv}
+              onChange={(e) =>
+                setCvv(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "13px",
+                margin: "8px 0 25px",
+                boxSizing: "border-box",
+                border:
+                  "1px solid #d1d5db",
+                borderRadius: "8px",
+              }}
+            />
+
+            {/* PAY */}
+
+            <button
+              type="button"
+              onClick={handlePayment}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "14px",
+                background:
+                  loading
+                    ? "#9ca3af"
+                    : "#0066ff",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor:
+                  loading
+                    ? "not-allowed"
+                    : "pointer",
+                fontWeight: "bold",
+                fontSize: "16px",
+              }}
+            >
+              {loading
+                ? "Processing..."
+                : `Pay ₹${totalPrice}`}
+            </button>
+
+            {/* BACK */}
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(-1)
+              }
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "10px",
+                background: "#e5e7eb",
+                color: "#333",
+                border: "none",
+                borderRadius: "8px",
+                cursor:
+                  loading
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              ← Back
+            </button>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Payment;

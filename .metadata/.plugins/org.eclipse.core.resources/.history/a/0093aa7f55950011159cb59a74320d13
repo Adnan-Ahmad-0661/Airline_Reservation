@@ -1,0 +1,628 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const API_URL = "http://localhost:8080";
+
+function MyBookings() {
+  const navigate = useNavigate();
+
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      const userId = localStorage.getItem("userId");
+
+      if (!userId) {
+        alert("Please login first");
+        navigate("/login");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_URL}/api/bookings/user/${userId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch bookings");
+      }
+
+      const data = await response.json();
+
+      console.log("My Bookings:", data);
+
+      setBookings(data);
+
+    } catch (error) {
+      console.error("Booking fetch error:", error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==============================
+  // CANCEL BOOKING
+  // ==============================
+
+  const handleCancel = async (bookingId) => {
+
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+
+    if (!confirmCancel) {
+      return;
+    }
+
+    try {
+
+      const response = await fetch(
+        `${API_URL}/api/bookings/cancel/${bookingId}`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Cancellation failed");
+      }
+
+      alert("Booking cancelled successfully");
+
+      fetchBookings();
+
+    } catch (error) {
+
+      console.error("Cancel error:", error);
+
+      alert(error.message);
+    }
+  };
+
+  // ==============================
+  // LOADING
+  // ==============================
+
+  if (loading) {
+
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <h2>Loading bookings...</h2>
+      </div>
+    );
+  }
+
+  // ==============================
+  // AVAILABLE SEATS
+  // ==============================
+
+  const activeBookings = bookings.filter(
+    (booking) =>
+      booking.status !== "CANCELLED"
+  );
+
+  /*
+   * Same flight ki duplicate information
+   * baar-baar na dikhane ke liye
+   */
+  const flights = [];
+
+  activeBookings.forEach((booking) => {
+
+    if (!booking.flight) {
+      return;
+    }
+
+    const flightId = booking.flight.id;
+
+    const alreadyExists = flights.some(
+      (flight) => flight.id === flightId
+    );
+
+    if (!alreadyExists) {
+      flights.push(booking.flight);
+    }
+  });
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+
+        {/* ==============================
+            HEADER
+        ============================== */}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "30px",
+          }}
+        >
+
+          <div>
+
+            <h1 style={{ marginBottom: "8px" }}>
+              My Bookings
+            </h1>
+
+            <p style={{ color: "#666" }}>
+              View and manage your flight bookings.
+            </p>
+
+          </div>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+
+        </div>
+
+
+        {/* ==============================
+            MAIN 2 COLUMN LAYOUT
+        ============================== */}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: "25px",
+            alignItems: "start",
+          }}
+        >
+
+          {/* ==============================
+              LEFT - BOOKINGS
+          ============================== */}
+
+          <div>
+
+            {bookings.length === 0 ? (
+
+              <div
+                style={{
+                  background: "white",
+                  padding: "50px",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                  boxShadow:
+                    "0 3px 12px rgba(0,0,0,0.08)",
+                }}
+              >
+
+                <h2>No Bookings Found</h2>
+
+                <p>
+                  You haven't booked any flights yet.
+                </p>
+
+                <button
+                  onClick={() => navigate("/")}
+                  style={{
+                    padding: "12px 25px",
+                    background: "#0066ff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Search Flights
+                </button>
+
+              </div>
+
+            ) : (
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: "20px",
+                }}
+              >
+
+                {bookings.map((booking) => (
+
+                  <div
+                    key={booking.id}
+                    style={{
+                      background: "white",
+                      padding: "25px",
+                      borderRadius: "12px",
+                      boxShadow:
+                        "0 3px 12px rgba(0,0,0,0.08)",
+                    }}
+                  >
+
+                    {/* Booking Header */}
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+
+                      <div>
+
+                        <h2 style={{ margin: 0 }}>
+                          ✈️{" "}
+                          {booking.flight?.airlineName ||
+                            "Airline"}
+                        </h2>
+
+                        <p
+                          style={{
+                            marginTop: "6px",
+                            color: "#666",
+                          }}
+                        >
+                          Flight{" "}
+                          {booking.flight?.flightNumber}
+                        </p>
+
+                      </div>
+
+
+                      <span
+                        style={{
+                          padding: "7px 14px",
+                          borderRadius: "20px",
+                          background:
+                            booking.status ===
+                            "CONFIRMED"
+                              ? "#d1fae5"
+                              : "#fee2e2",
+                          color:
+                            booking.status ===
+                            "CONFIRMED"
+                              ? "#065f46"
+                              : "#991b1b",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {booking.status}
+                      </span>
+
+                    </div>
+
+                    <hr />
+
+
+                    {/* Booking Details */}
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "1fr 1fr",
+                        gap: "8px",
+                      }}
+                    >
+
+                      <p>
+                        <strong>PNR:</strong>{" "}
+                        {booking.pnr}
+                      </p>
+
+                      <p>
+                        <strong>Seat:</strong>{" "}
+                        {booking.seatNumber}
+                      </p>
+
+                      <p>
+                        <strong>Passenger:</strong>{" "}
+                        {booking.passenger?.name ||
+                          "-"}
+                      </p>
+
+                      <p>
+                        <strong>Amount:</strong>{" "}
+                        ₹{booking.amount}
+                      </p>
+
+                      <p>
+                        <strong>Flight ID:</strong>{" "}
+                        {booking.flight?.id}
+                      </p>
+
+                      <p>
+                        <strong>Booking Date:</strong>{" "}
+                        {booking.bookingDate
+                          ? new Date(
+                              booking.bookingDate
+                            ).toLocaleString()
+                          : "-"}
+                      </p>
+
+                    </div>
+
+
+                    {/* Buttons */}
+
+                    <div
+                      style={{
+                        marginTop: "20px",
+                        display: "flex",
+                        gap: "10px",
+                      }}
+                    >
+
+                      {booking.status !==
+                        "CANCELLED" && (
+
+                        <button
+                          onClick={() =>
+                            handleCancel(
+                              booking.id
+                            )
+                          }
+                          style={{
+                            padding: "10px 20px",
+                            background: "#dc2626",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Cancel Booking
+                        </button>
+
+                      )}
+
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/booking/${booking.id}`
+                          )
+                        }
+                        style={{
+                          padding: "10px 20px",
+                          background: "#0066ff",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        View Ticket
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                ))}
+
+              </div>
+
+            )}
+
+          </div>
+
+
+          {/* ==============================
+              RIGHT - AVAILABLE SEATS
+          ============================== */}
+
+          <div>
+
+            <div
+              style={{
+                background: "white",
+                padding: "25px",
+                borderRadius: "12px",
+                boxShadow:
+                  "0 3px 12px rgba(0,0,0,0.08)",
+                position: "sticky",
+                top: "20px",
+              }}
+            >
+
+              <h2>
+                🪑 Available Seats
+              </h2>
+
+              <hr />
+
+              {flights.length === 0 ? (
+
+                <p style={{ color: "#666" }}>
+                  No active flight booking.
+                </p>
+
+              ) : (
+
+                flights.map((flight) => {
+
+                  const totalSeats =
+                    Number(
+                      flight.totalSeats || 0
+                    );
+
+                  const availableSeats =
+                    Number(
+                      flight.availableSeats || 0
+                    );
+
+                  const bookedSeats =
+                    totalSeats -
+                    availableSeats;
+
+                  return (
+                    <div
+                      key={flight.id}
+                      style={{
+                        border:
+                          "1px solid #ddd",
+                        borderRadius: "10px",
+                        padding: "18px",
+                        marginBottom: "15px",
+                      }}
+                    >
+
+                      <h3>
+                        {flight.airlineName ||
+                          "Airline"}
+                      </h3>
+
+                      <p>
+                        <strong>
+                          Flight:
+                        </strong>{" "}
+                        {flight.flightNumber}
+                      </p>
+
+                      <p>
+                        <strong>
+                          Flight ID:
+                        </strong>{" "}
+                        {flight.id}
+                      </p>
+
+                      <hr />
+
+                      {/* Available */}
+
+                      <div
+                        style={{
+                          background: "#d1fae5",
+                          padding: "15px",
+                          borderRadius: "8px",
+                          marginBottom: "10px",
+                        }}
+                      >
+
+                        <div
+                          style={{
+                            fontSize: "30px",
+                            fontWeight: "bold",
+                            color: "#047857",
+                          }}
+                        >
+                          {availableSeats}
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#065f46",
+                          }}
+                        >
+                          Available Seats
+                        </div>
+
+                      </div>
+
+
+                      {/* Booked */}
+
+                      <div
+                        style={{
+                          background: "#fee2e2",
+                          padding: "15px",
+                          borderRadius: "8px",
+                          marginBottom: "10px",
+                        }}
+                      >
+
+                        <div
+                          style={{
+                            fontSize: "24px",
+                            fontWeight: "bold",
+                            color: "#b91c1c",
+                          }}
+                        >
+                          {bookedSeats}
+                        </div>
+
+                        <div
+                          style={{
+                            color: "#991b1b",
+                          }}
+                        >
+                          Booked Seats
+                        </div>
+
+                      </div>
+
+
+                      {/* Total */}
+
+                      <div
+                        style={{
+                          background: "#f3f4f6",
+                          padding: "15px",
+                          borderRadius: "8px",
+                        }}
+                      >
+
+                        <strong>
+                          Total Seats:
+                        </strong>{" "}
+                        {totalSeats}
+
+                      </div>
+
+                    </div>
+                  );
+
+                })
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+export default MyBookings;

@@ -1,0 +1,147 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useState } from "react";
+
+const API_URL = "http://localhost:8080";
+
+function AdminFlights() {
+  const [flights, setFlights] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchFlights = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/flights`);
+
+      if (!response.ok) {
+        throw new Error("Unable to fetch flights");
+      }
+
+      const data = await response.json();
+
+      console.log("Flights:", data);
+
+      setFlights(data);
+    } catch (error) {
+      console.error("Flight fetch error:", error);
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFlights();
+  }, []);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <h2>Loading Flights...</h2>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+        <h1>✈ Manage Flights</h1>
+
+        <p style={{ color: "#666" }}>
+          View and manage all flights.
+        </p>
+
+        <div
+          style={{
+            background: "white",
+            padding: "25px",
+            borderRadius: "12px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+            marginTop: "25px",
+          }}
+        >
+          {flights.length === 0 ? (
+            <h3>No flights found.</h3>
+          ) : (
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+              }}
+            >
+              <thead>
+                <tr>
+                  <th style={thStyle}>ID</th>
+                  <th style={thStyle}>Flight Number</th>
+                  <th style={thStyle}>Airline</th>
+                  <th style={thStyle}>Price</th>
+                  <th style={thStyle}>Available Seats</th>
+                  <th style={thStyle}>Total Seats</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {flights.map((flight) => (
+                  <tr key={flight.id}>
+                    <td style={tdStyle}>{flight.id}</td>
+
+                    <td style={tdStyle}>
+                      {flight.flightNumber || "-"}
+                    </td>
+
+                    <td style={tdStyle}>
+                      {flight.airlineName || "-"}
+                    </td>
+
+                    <td style={tdStyle}>
+                      ₹{flight.price || 0}
+                    </td>
+
+                    <td style={tdStyle}>
+                      {flight.availableSeats ?? 0}
+                    </td>
+
+                    <td style={tdStyle}>
+                      {flight.totalSeats ?? 52}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const thStyle = {
+  padding: "15px",
+  borderBottom: "2px solid #ddd",
+  textAlign: "left",
+};
+
+const tdStyle = {
+  padding: "15px",
+  borderBottom: "1px solid #eee",
+};
+
+export default AdminFlights;

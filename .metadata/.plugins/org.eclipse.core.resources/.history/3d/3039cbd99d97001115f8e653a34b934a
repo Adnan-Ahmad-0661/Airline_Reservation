@@ -1,0 +1,1499 @@
+```jsx
+import { useEffect, useState } from "react";
+import API from "../services/api";
+
+function AdminFlights() {
+
+  // =====================================================
+  // STATES
+  // =====================================================
+
+  const [flights, setFlights] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [adding, setAdding] = useState(false);
+
+  const [showForm, setShowForm] = useState(false);
+
+
+  // =====================================================
+  // EMPTY FORM
+  // =====================================================
+
+  const emptyForm = {
+    flightNumber: "",
+    airlineName: "",
+    price: "",
+    availableSeats: "",
+    totalSeats: 52,
+    sourceAirportId: "",
+    destinationAirportId: "",
+  };
+
+
+  const [formData, setFormData] =
+    useState(emptyForm);
+
+
+  // =====================================================
+  // FETCH ALL FLIGHTS
+  // =====================================================
+
+  const fetchFlights = async () => {
+
+    try {
+
+      setLoading(true);
+
+      const response =
+        await API.get("/api/flights");
+
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "GET FLIGHTS STATUS:",
+        response.status
+      );
+
+      console.log(
+        "GET FLIGHTS RESPONSE:",
+        response.data
+      );
+
+      console.log(
+        "================================="
+      );
+
+
+      if (Array.isArray(response.data)) {
+
+        setFlights(response.data);
+
+      } else {
+
+        setFlights([]);
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "FETCH FLIGHTS ERROR:",
+        error
+      );
+
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+
+      console.error(
+        "BACKEND RESPONSE:",
+        error.response?.data
+      );
+
+
+      const backendMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.response?.data;
+
+
+      alert(
+        backendMessage ||
+        "Unable to fetch flights."
+      );
+
+
+      setFlights([]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+
+  // =====================================================
+  // LOAD FLIGHTS
+  // =====================================================
+
+  useEffect(() => {
+
+    fetchFlights();
+
+  }, []);
+
+
+  // =====================================================
+  // HANDLE NORMAL INPUT
+  // =====================================================
+
+  const handleChange = (e) => {
+
+    const {
+      name,
+      value
+    } = e.target;
+
+
+    setFormData((prev) => ({
+
+      ...prev,
+
+      [name]: value,
+
+    }));
+
+  };
+
+
+  // =====================================================
+  // RESET FORM
+  // =====================================================
+
+  const resetForm = () => {
+
+    setFormData({
+      ...emptyForm,
+    });
+
+  };
+
+
+  // =====================================================
+  // ADD FLIGHT
+  // =====================================================
+
+  const handleAddFlight = async (e) => {
+
+    e.preventDefault();
+
+
+    // ===================================================
+    // VALIDATION
+    // ===================================================
+
+    if (
+      !formData.flightNumber.trim()
+    ) {
+
+      alert(
+        "Please enter flight number."
+      );
+
+      return;
+    }
+
+
+    if (
+      !formData.airlineName.trim()
+    ) {
+
+      alert(
+        "Please enter airline name."
+      );
+
+      return;
+    }
+
+
+    if (!formData.price) {
+
+      alert(
+        "Please enter price."
+      );
+
+      return;
+    }
+
+
+    if (
+      Number(formData.price) <= 0
+    ) {
+
+      alert(
+        "Price must be greater than 0."
+      );
+
+      return;
+    }
+
+
+    if (
+      !formData.availableSeats
+    ) {
+
+      alert(
+        "Please enter available seats."
+      );
+
+      return;
+    }
+
+
+    if (
+      Number(formData.availableSeats) <= 0
+    ) {
+
+      alert(
+        "Available seats must be greater than 0."
+      );
+
+      return;
+    }
+
+
+    if (
+      !formData.totalSeats
+    ) {
+
+      alert(
+        "Please enter total seats."
+      );
+
+      return;
+    }
+
+
+    if (
+      Number(formData.totalSeats) <= 0
+    ) {
+
+      alert(
+        "Total seats must be greater than 0."
+      );
+
+      return;
+    }
+
+
+    if (
+      Number(formData.availableSeats) >
+      Number(formData.totalSeats)
+    ) {
+
+      alert(
+        "Available seats cannot be greater than total seats."
+      );
+
+      return;
+    }
+
+
+    if (
+      !formData.sourceAirportId
+    ) {
+
+      alert(
+        "Please enter source airport ID."
+      );
+
+      return;
+    }
+
+
+    if (
+      !formData.destinationAirportId
+    ) {
+
+      alert(
+        "Please enter destination airport ID."
+      );
+
+      return;
+    }
+
+
+    if (
+      Number(formData.sourceAirportId) ===
+      Number(formData.destinationAirportId)
+    ) {
+
+      alert(
+        "Source and destination airport cannot be same."
+      );
+
+      return;
+    }
+
+
+    // ===================================================
+    // LOGIN CHECK
+    // ===================================================
+
+    const token =
+      localStorage.getItem("token");
+
+
+    if (!token) {
+
+      alert(
+        "Please login first."
+      );
+
+      return;
+    }
+
+
+    // ===================================================
+    // CREATE REQUEST BODY
+    // ===================================================
+
+    const flight = {
+
+      flightNumber:
+        formData.flightNumber.trim(),
+
+      airlineName:
+        formData.airlineName.trim(),
+
+      price:
+        Number(formData.price),
+
+      availableSeats:
+        Number(formData.availableSeats),
+
+      totalSeats:
+        Number(formData.totalSeats),
+
+      sourceAirport: {
+
+        id:
+          Number(
+            formData.sourceAirportId
+          ),
+
+      },
+
+      destinationAirport: {
+
+        id:
+          Number(
+            formData.destinationAirportId
+          ),
+
+      },
+
+    };
+
+
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "ADDING FLIGHT"
+    );
+
+    console.log(
+      "REQUEST BODY:",
+      flight
+    );
+
+    console.log(
+      "================================="
+    );
+
+
+    // ===================================================
+    // API CALL
+    // ===================================================
+
+    try {
+
+      setAdding(true);
+
+
+      const response =
+        await API.post(
+          "/api/flights",
+          flight
+        );
+
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "ADD FLIGHT STATUS:",
+        response.status
+      );
+
+      console.log(
+        "ADD FLIGHT RESPONSE:",
+        response.data
+      );
+
+      console.log(
+        "================================="
+      );
+
+
+      // =================================================
+      // SUCCESS
+      // =================================================
+
+      alert(
+        "Flight added successfully!"
+      );
+
+
+      // RESET FORM
+
+      resetForm();
+
+
+      // CLOSE FORM
+
+      setShowForm(false);
+
+
+      // REFRESH FLIGHTS
+
+      await fetchFlights();
+
+
+    } catch (error) {
+
+      console.error(
+        "================================="
+      );
+
+      console.error(
+        "ADD FLIGHT ERROR:",
+        error
+      );
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+      console.error(
+        "BACKEND RESPONSE:",
+        error.response?.data
+      );
+
+      console.error(
+        "================================="
+      );
+
+
+      // =================================================
+      // UNAUTHORIZED
+      // =================================================
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        localStorage.removeItem(
+          "token"
+        );
+
+        alert(
+          "Your login session has expired. Please login again."
+        );
+
+        window.location.href =
+          "/login";
+
+        return;
+      }
+
+
+      // =================================================
+      // FORBIDDEN
+      // =================================================
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        alert(
+          "Access denied. Only ADMIN can add flights."
+        );
+
+        return;
+      }
+
+
+      // =================================================
+      // BACKEND ERROR
+      // =================================================
+
+      const backendData =
+        error.response?.data;
+
+
+      let message =
+        "Unable to add flight.";
+
+
+      if (
+        typeof backendData ===
+        "string" &&
+        backendData.trim()
+      ) {
+
+        message =
+          backendData;
+
+      } else if (
+        backendData?.message
+      ) {
+
+        message =
+          backendData.message;
+
+      } else if (
+        backendData?.error
+      ) {
+
+        message =
+          backendData.error;
+
+      } else if (
+        error.message
+      ) {
+
+        message =
+          error.message;
+
+      }
+
+
+      alert(message);
+
+    } finally {
+
+      setAdding(false);
+
+    }
+
+  };
+
+
+  // =====================================================
+  // LOADING SCREEN
+  // =====================================================
+
+  if (loading) {
+
+    return (
+
+      <div
+        style={{
+          minHeight: "100vh",
+
+          display: "flex",
+
+          justifyContent:
+            "center",
+
+          alignItems:
+            "center",
+
+          fontFamily:
+            "Arial, sans-serif",
+
+          background:
+            "#f5f7fa",
+        }}
+      >
+
+        <h2>
+          Loading Flights...
+        </h2>
+
+      </div>
+
+    );
+
+  }
+
+
+  // =====================================================
+  // UI
+  // =====================================================
+
+  return (
+
+    <div
+      style={{
+        minHeight: "100vh",
+
+        background:
+          "#f5f7fa",
+
+        padding:
+          "40px",
+
+        fontFamily:
+          "Arial, sans-serif",
+      }}
+    >
+
+      <div
+        style={{
+          maxWidth:
+            "1200px",
+
+          margin:
+            "0 auto",
+        }}
+      >
+
+
+        {/* =================================================
+            HEADER
+        ================================================= */}
+
+        <div
+          style={{
+            display:
+              "flex",
+
+            justifyContent:
+              "space-between",
+
+            alignItems:
+              "center",
+
+            marginBottom:
+              "20px",
+          }}
+        >
+
+          <div>
+
+            <h1>
+              ✈ Manage Flights
+            </h1>
+
+            <p
+              style={{
+                color:
+                  "#666",
+              }}
+            >
+              View and manage all
+              flights.
+            </p>
+
+          </div>
+
+
+          <button
+            type="button"
+
+            onClick={() => {
+
+              if (showForm) {
+
+                resetForm();
+
+              }
+
+              setShowForm(
+                !showForm
+              );
+
+            }}
+
+            style={{
+              padding:
+                "12px 22px",
+
+              background:
+                showForm
+                  ? "#dc2626"
+                  : "#16a34a",
+
+              color:
+                "white",
+
+              border:
+                "none",
+
+              borderRadius:
+                "6px",
+
+              cursor:
+                "pointer",
+
+              fontWeight:
+                "bold",
+
+              fontSize:
+                "15px",
+            }}
+          >
+
+            {showForm
+              ? "Close Form"
+              : "+ Add Flight"}
+
+          </button>
+
+        </div>
+
+
+        {/* =================================================
+            ADD FLIGHT FORM
+        ================================================= */}
+
+        {showForm && (
+
+          <div
+            style={{
+              background:
+                "white",
+
+              padding:
+                "30px",
+
+              borderRadius:
+                "12px",
+
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+
+              marginBottom:
+                "25px",
+            }}
+          >
+
+            <h2>
+              Add New Flight
+            </h2>
+
+
+            <form
+              onSubmit={
+                handleAddFlight
+              }
+            >
+
+              <div
+                style={{
+                  display:
+                    "grid",
+
+                  gridTemplateColumns:
+                    "1fr 1fr",
+
+                  gap:
+                    "20px",
+                }}
+              >
+
+
+                {/* FLIGHT NUMBER */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Flight Number
+                    </strong>
+                  </label>
+
+                  <input
+                    type="text"
+
+                    name="flightNumber"
+
+                    value={
+                      formData.flightNumber
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: AI202"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* AIRLINE */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Airline Name
+                    </strong>
+                  </label>
+
+                  <input
+                    type="text"
+
+                    name="airlineName"
+
+                    value={
+                      formData.airlineName
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: Air India"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* PRICE */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Price
+                    </strong>
+                  </label>
+
+                  <input
+                    type="number"
+
+                    name="price"
+
+                    value={
+                      formData.price
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: 5500"
+
+                    min="1"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* AVAILABLE SEATS */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Available Seats
+                    </strong>
+                  </label>
+
+                  <input
+                    type="number"
+
+                    name="availableSeats"
+
+                    value={
+                      formData.availableSeats
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: 52"
+
+                    min="1"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* TOTAL SEATS */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Total Seats
+                    </strong>
+                  </label>
+
+                  <input
+                    type="number"
+
+                    name="totalSeats"
+
+                    value={
+                      formData.totalSeats
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    min="1"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* SOURCE AIRPORT ID */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Source Airport ID
+                    </strong>
+                  </label>
+
+                  <input
+                    type="number"
+
+                    name="sourceAirportId"
+
+                    value={
+                      formData.sourceAirportId
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: 1"
+
+                    min="1"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+
+                {/* DESTINATION AIRPORT ID */}
+
+                <div>
+
+                  <label>
+                    <strong>
+                      Destination Airport ID
+                    </strong>
+                  </label>
+
+                  <input
+                    type="number"
+
+                    name="destinationAirportId"
+
+                    value={
+                      formData.destinationAirportId
+                    }
+
+                    onChange={
+                      handleChange
+                    }
+
+                    placeholder="Example: 2"
+
+                    min="1"
+
+                    style={
+                      inputStyle
+                    }
+                  />
+
+                </div>
+
+              </div>
+
+
+              {/* =================================================
+                  SUBMIT BUTTON
+              ================================================= */}
+
+              <button
+                type="submit"
+
+                disabled={
+                  adding
+                }
+
+                style={{
+                  marginTop:
+                    "25px",
+
+                  padding:
+                    "13px 28px",
+
+                  background:
+                    adding
+                      ? "#9ca3af"
+                      : "#0066ff",
+
+                  color:
+                    "white",
+
+                  border:
+                    "none",
+
+                  borderRadius:
+                    "6px",
+
+                  cursor:
+                    adding
+                      ? "not-allowed"
+                      : "pointer",
+
+                  fontWeight:
+                    "bold",
+
+                  fontSize:
+                    "15px",
+                }}
+              >
+
+                {adding
+                  ? "Adding Flight..."
+                  : "Add Flight"}
+
+              </button>
+
+            </form>
+
+          </div>
+
+        )}
+
+
+        {/* =================================================
+            FLIGHTS TABLE
+        ================================================= */}
+
+        <div
+          style={{
+            background:
+              "white",
+
+            padding:
+              "25px",
+
+            borderRadius:
+              "12px",
+
+            boxShadow:
+              "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+
+          <div
+            style={{
+              display:
+                "flex",
+
+              justifyContent:
+                "space-between",
+
+              alignItems:
+                "center",
+            }}
+          >
+
+            <h2>
+              All Flights
+            </h2>
+
+
+            <button
+              type="button"
+
+              onClick={
+                fetchFlights
+              }
+
+              style={{
+                padding:
+                  "9px 15px",
+
+                border:
+                  "1px solid #ccc",
+
+                background:
+                  "white",
+
+                borderRadius:
+                  "6px",
+
+                cursor:
+                  "pointer",
+              }}
+            >
+              🔄 Refresh
+            </button>
+
+          </div>
+
+
+          {/* NO FLIGHTS */}
+
+          {flights.length === 0 ? (
+
+            <div
+              style={{
+                textAlign:
+                  "center",
+
+                padding:
+                  "40px",
+
+                color:
+                  "#666",
+              }}
+            >
+
+              <h3>
+                No flights found.
+              </h3>
+
+              <p>
+                Click "+ Add Flight"
+                to create a new flight.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div
+              style={{
+                overflowX:
+                  "auto",
+              }}
+            >
+
+              <table
+                style={{
+                  width:
+                    "100%",
+
+                  borderCollapse:
+                    "collapse",
+
+                  marginTop:
+                    "20px",
+                }}
+              >
+
+                <thead>
+
+                  <tr>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      ID
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Flight Number
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Airline
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Source
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Destination
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Price
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Available Seats
+                    </th>
+
+                    <th
+                      style={
+                        thStyle
+                      }
+                    >
+                      Total Seats
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {flights.map(
+                    (flight) => (
+
+                      <tr
+                        key={
+                          flight.id
+                        }
+                      >
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.id
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.flightNumber ||
+                            "-"
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.airlineName ||
+                            flight.airline ||
+                            "-"
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.sourceAirport?.name ||
+                            flight.sourceAirport?.city ||
+                            flight.source ||
+                            "-"
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.destinationAirport?.name ||
+                            flight.destinationAirport?.city ||
+                            flight.destination ||
+                            "-"
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          ₹
+                          {
+                            flight.price ||
+                            0
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.availableSeats ??
+                            0
+                          }
+                        </td>
+
+
+                        <td
+                          style={
+                            tdStyle
+                          }
+                        >
+                          {
+                            flight.totalSeats ??
+                            0
+                          }
+                        </td>
+
+                      </tr>
+
+                    )
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+        </div>
+
+      </div>
+
+    </div>
+
+  );
+}
+
+
+// =====================================================
+// INPUT STYLE
+// =====================================================
+
+const inputStyle = {
+
+  width:
+    "100%",
+
+  padding:
+    "12px",
+
+  marginTop:
+    "8px",
+
+  border:
+    "1px solid #ccc",
+
+  borderRadius:
+    "6px",
+
+  boxSizing:
+    "border-box",
+
+  fontSize:
+    "15px",
+
+};
+
+
+// =====================================================
+// TABLE HEADER STYLE
+// =====================================================
+
+const thStyle = {
+
+  padding:
+    "15px",
+
+  borderBottom:
+    "2px solid #ddd",
+
+  textAlign:
+    "left",
+
+  whiteSpace:
+    "nowrap",
+
+};
+
+
+// =====================================================
+// TABLE DATA STYLE
+// =====================================================
+
+const tdStyle = {
+
+  padding:
+    "15px",
+
+  borderBottom:
+    "1px solid #eee",
+
+  whiteSpace:
+    "nowrap",
+
+};
+
+
+// =====================================================
+// EXPORT
+// =====================================================
+
+export default AdminFlights;
+```

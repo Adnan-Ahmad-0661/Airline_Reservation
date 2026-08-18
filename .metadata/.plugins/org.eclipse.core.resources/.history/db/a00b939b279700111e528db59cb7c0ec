@@ -1,0 +1,36 @@
+```jsx
+import { Navigate, useLocation } from "react-router-dom";
+
+function ProtectedRoute({ children }) {
+
+  const location = useLocation();
+
+  const token = localStorage.getItem("token");
+
+  // ==========================================
+  // LOGIN CHECK
+  // ==========================================
+
+  if (!token) {
+
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: location.pathname
+        }}
+      />
+    );
+
+  }
+
+  // ==========================================
+  // USER LOGGED IN
+  // ==========================================
+
+  return children;
+}
+
+export default ProtectedRoute;
+```

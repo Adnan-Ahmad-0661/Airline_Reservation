@@ -1,0 +1,45 @@
+package com.airline.reservation.service.impl;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.entity.Ticket;
+import com.airline.reservation.service.TicketService;
+
+@Service
+public class TicketServiceImpl implements TicketService {
+
+	@Override
+	public Ticket generateTicket(Long bookingId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Ticket getTicketById(Long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Ticket getTicketByPnr(String pnr) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Ticket getTicketByBookingId(Long bookingId) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<Ticket> getAllTickets() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+
+}

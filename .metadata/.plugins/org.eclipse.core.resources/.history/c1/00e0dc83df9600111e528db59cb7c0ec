@@ -1,0 +1,75 @@
+package com.airline.reservation.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.entity.User;
+import com.airline.reservation.repository.UserRepository;
+import com.airline.reservation.service.UserService;
+
+@Service
+public class UserServiceImpl implements UserService {
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Override
+	public User addUser(User user) {
+		
+		User user2 = userRepository.findByEmail(user.getEmail());
+		if(user2!=null)
+		{
+			throw new RuntimeException("User Already exist");
+		}
+			
+		user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+		if (user.getRole() == null || user.getRole().isEmpty()) {
+			user.setRole("USER");
+		}
+
+		return userRepository.save(user);
+	}
+
+	@Override
+	public User getUserById(Long id) {
+		// TODO Auto-generated method stub
+		return userRepository.findById(id).orElse(null);
+	}
+
+	@Override
+	public List<User> getAllUsers() {
+		// TODO Auto-generated method stub
+		return userRepository.findAll();
+	}
+
+	@Override
+	public User updateUser(Long id, User user) {
+		// TODO Auto-generated method stub
+		User user2 = userRepository.findById(id).orElse(null);
+		if (user2 == null) {
+			return null;
+		}
+		user2.setEmail(user.getEmail());
+		user2.setId(user.getId());
+		user2.setName(user.getName());
+		user2.setPassword(user2.getPassword());
+		user2.setPhone(user.getPhone());
+		user2.setRole(user.getRole());
+		userRepository.save(user2);
+		return user2;
+	}
+
+	@Override
+	public void deleteUser(Long id) {
+		// TODO Auto-generated method stub
+		userRepository.deleteById(id);
+	}
+
+}

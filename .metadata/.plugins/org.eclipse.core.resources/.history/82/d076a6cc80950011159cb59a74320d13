@@ -1,0 +1,5 @@
+package com.airline.reservation.util;
+
+public class JwtUtil {
+
+}
