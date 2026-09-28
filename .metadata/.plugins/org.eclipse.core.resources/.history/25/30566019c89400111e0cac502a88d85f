@@ -1,0 +1,144 @@
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+function MyBookings() {
+  const navigate = useNavigate();
+
+  const [bookings, setBookings] = useState(
+    JSON.parse(localStorage.getItem("bookings")) || []
+  );
+
+  const clearBookings = () => {
+    localStorage.removeItem("bookings");
+    setBookings([]);
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "auto",
+        }}
+      >
+        <h1>My Bookings</h1>
+
+        <p>Your confirmed flight bookings.</p>
+
+        {bookings.length === 0 ? (
+          <div
+            style={{
+              background: "white",
+              padding: "40px",
+              marginTop: "30px",
+              borderRadius: "12px",
+              textAlign: "center",
+            }}
+          >
+            <h2>No Bookings Yet</h2>
+
+            <p>You have not booked any flight yet.</p>
+
+            <button
+              onClick={() => navigate("/")}
+              style={{
+                padding: "12px 25px",
+                background: "#0066ff",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Search Flights
+            </button>
+          </div>
+        ) : (
+          <>
+            {bookings.map((booking) => (
+              <div
+                key={booking.id}
+                style={{
+                  background: "white",
+                  padding: "25px",
+                  marginTop: "25px",
+                  borderRadius: "12px",
+                  boxShadow:
+                    "0 3px 12px rgba(0,0,0,0.08)",
+                }}
+              >
+                <h2>
+                  {booking.airline} -{" "}
+                  {booking.flightNumber}
+                </h2>
+
+                <hr />
+
+                <p>
+                  <strong>Passenger:</strong>{" "}
+                  {booking.passengerName}
+                </p>
+
+                <p>
+                  <strong>Route:</strong>{" "}
+                  {booking.from} → {booking.to}
+                </p>
+
+                <p>
+                  <strong>Travel Date:</strong>{" "}
+                  {booking.travelDate}
+                </p>
+
+                <p>
+                  <strong>Passengers:</strong>{" "}
+                  {booking.passengers}
+                </p>
+
+                <p>
+                  <strong>Seats:</strong>{" "}
+                  {booking.selectedSeats.join(", ")}
+                </p>
+
+                <p>
+                  <strong>Total Price:</strong>{" "}
+                  ₹{booking.totalPrice}
+                </p>
+
+                <p>
+                  <strong>Payment:</strong>{" "}
+                  <span style={{ color: "green" }}>
+                    {booking.paymentStatus}
+                  </span>
+                </p>
+              </div>
+            ))}
+
+            <button
+              onClick={clearBookings}
+              style={{
+                marginTop: "25px",
+                padding: "12px 20px",
+                background: "#dc3545",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Clear Bookings
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default MyBookings;

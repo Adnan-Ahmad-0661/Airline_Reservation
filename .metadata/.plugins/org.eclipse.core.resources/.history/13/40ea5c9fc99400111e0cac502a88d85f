@@ -1,0 +1,121 @@
+package com.airline.reservation.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.airline.reservation.entity.Booking;
+import com.airline.reservation.service.BookingService;
+
+@RestController
+@RequestMapping("/api/bookings")
+@CrossOrigin
+public class BookingController {
+
+    @Autowired
+    private BookingService bookingService;
+
+
+    // ==============================
+    // CREATE BOOKING
+    // ==============================
+
+    @PostMapping
+    public ResponseEntity<Booking> createBooking(
+            @RequestParam Long userId,
+            @RequestParam Long flightId,
+            @RequestParam Long passengerId,
+            @RequestParam String seatNumber) {
+
+        Booking booking = bookingService.createBooking(
+                userId,
+                flightId,
+                passengerId,
+                seatNumber
+        );
+
+        return ResponseEntity.ok(booking);
+    }
+
+
+    // ==============================
+    // GET ALL BOOKINGS
+    // ==============================
+
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+
+        return ResponseEntity.ok(
+                bookingService.getAllBookings()
+        );
+    }
+
+
+    // ==============================
+    // GET BOOKING BY ID
+    // ==============================
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Booking> getBookingById(
+            @PathVariable Long id) {
+
+        Booking booking =
+                bookingService.getBookingById(id);
+
+        if (booking == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(booking);
+    }
+
+
+    // ==============================
+    // GET USER BOOKINGS
+    // ==============================
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<Booking>> getBookingsByUser(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                bookingService.getBookingsByUser(userId)
+        );
+    }
+
+
+    // ==============================
+    // GET BOOKING BY PNR
+    // ==============================
+
+    @GetMapping("/pnr/{pnr}")
+    public ResponseEntity<Booking> getBookingByPnr(
+            @PathVariable String pnr) {
+
+        Booking booking =
+                bookingService.getBookingByPnr(pnr);
+
+        if (booking == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(booking);
+    }
+
+
+    // ==============================
+    // CANCEL BOOKING
+    // ==============================
+
+    @PutMapping("/cancel/{bookingId}")
+    public ResponseEntity<Booking> cancelBooking(
+            @PathVariable Long bookingId) {
+
+        Booking booking =
+                bookingService.cancelBooking(bookingId);
+
+        return ResponseEntity.ok(booking);
+    }
+}

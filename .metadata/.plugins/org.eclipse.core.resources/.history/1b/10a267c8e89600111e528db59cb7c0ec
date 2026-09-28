@@ -1,0 +1,53 @@
+package com.airline.reservation.entity;
+
+import java.time.LocalDateTime;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
+
+import com.airline.reservation.dto.UserResponse;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "BOOKING")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+
+public class Booking {
+
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	 private Long id;
+
+	    private String pnr;
+
+	    @ManyToOne
+	    @JoinColumn(name = "user_id")
+	    private UserResponse user;
+	    private Double amount;
+	    private LocalDateTime bookingDate;
+	    private String seatNumber;
+	    
+	    private String status;
+	    
+	    @ManyToOne
+	    @JoinColumn(name = "flight_id")
+	    private Flight flight;
+	    
+	    
+	    @ManyToOne
+	    @JoinColumn(name = "passenger_id")
+	    private Passenger passenger;
+	    
+
+}

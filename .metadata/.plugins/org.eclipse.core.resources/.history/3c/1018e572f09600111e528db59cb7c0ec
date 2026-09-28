@@ -1,0 +1,5 @@
+package com.airline.reservation.dto;
+
+public class BookingResponse {
+
+}

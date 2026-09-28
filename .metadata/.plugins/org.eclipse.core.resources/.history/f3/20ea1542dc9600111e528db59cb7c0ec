@@ -1,0 +1,10 @@
+package com.airline.reservation;
+
+public class Snippet {
+	AUTH HEADER: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG5hbkBnbWFpbC5jb20iLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3ODY1OTY2NDEsImV4cCI6MTc4NjYwMDI0MX0.SeByRCZRpnVXKIDIv706pogxO4g6Uke0kKvGCSd9Oxw
+	JWT TOKEN FOUND
+	JWT VALIDATION ERROR: JWT expired at 2026-08-13T05:50:41Z. Current time: 2026-08-13T05:57:13Z, a difference of 392213 milliseconds.  Allowed clock skew: 0 milliseconds.
+	JWT TOKEN INVALID
+	
+}
+

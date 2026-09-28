@@ -1,0 +1,9 @@
+package com.airline.reservation.service;
+
+import com.airline.reservation.dto.LoginRequest;
+import com.airline.reservation.dto.LoginResponse;
+
+public interface AuthService {
+	 LoginResponse login(LoginRequest request);
+	 
+}

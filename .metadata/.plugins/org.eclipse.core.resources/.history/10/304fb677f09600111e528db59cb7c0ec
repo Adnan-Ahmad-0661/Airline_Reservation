@@ -1,0 +1,18 @@
+package com.airline.reservation.dto;
+
+import java.time.LocalDateTime;
+
+import com.airline.reservation.entity.Flight;
+import com.airline.reservation.entity.Passenger;
+
+public class BookingResponse {
+	private Long id;
+    private String pnr;
+    private UserResponse user;
+    private Double amount;
+    private LocalDateTime bookingDate;
+    private String seatNumber;
+    private String status;
+    private Flight flight;
+    private Passenger passenger;
+}

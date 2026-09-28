@@ -1,0 +1,84 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import AdminDashboard from "./pages/AdminDashboard";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Booking from "./pages/Booking";
+import SeatSelection from "./pages/SeatSelection";
+import Payment from "./pages/Payment";
+import Confirmation from "./pages/Confirmation";
+import MyBookings from "./pages/MyBookings";
+import ViewTicket from "./pages/ViewTicket";
+import AdminFlights from "./pages/AdminFlights";
+
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+	  
+	  
+	  
+	  <Route
+	    path="/admin"
+	    element={<AdminDashboard />}
+	  />
+
+	  <Route
+	    path="/admin/flights"
+	    element={<AdminFlights />}
+	  />
+	  
+        {/* HOME */}
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        {/* LOGIN */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        {/* BOOKING */}
+        <Route
+          path="/booking"
+          element={<Booking />}
+        />
+
+        {/* SEAT SELECTION */}
+        <Route
+          path="/seat-selection"
+          element={<SeatSelection />}
+        />
+
+        {/* PAYMENT */}
+        <Route
+          path="/payment"
+          element={<Payment />}
+        />
+
+        {/* CONFIRMATION */}
+        <Route
+          path="/confirmation"
+          element={<Confirmation />}
+        />
+
+        {/* MY BOOKINGS */}
+        <Route
+          path="/my-bookings"
+          element={<MyBookings />}
+        />
+
+        {/* VIEW TICKET */}
+        <Route
+          path="/view-ticket/:bookingId"
+          element={<ViewTicket />}
+        />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

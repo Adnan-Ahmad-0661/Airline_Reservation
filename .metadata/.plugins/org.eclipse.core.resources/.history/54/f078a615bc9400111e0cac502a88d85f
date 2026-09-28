@@ -1,0 +1,269 @@
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
+function SeatSelection() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const {
+    flight,
+    from,
+    to,
+    travelDate,
+    passengers,
+    userId,
+    passengerId,
+    passengerName,
+  } = location.state || {};
+
+  const [selectedSeats, setSelectedSeats] = useState([]);
+
+  const seats = [
+    "1A", "1B", "1C", "1D",
+    "2A", "2B", "2C", "2D",
+    "3A", "3B", "3C", "3D",
+    "4A", "4B", "4C", "4D",
+    "5A", "5B", "5C", "5D",
+    "6A", "6B", "6C", "6D",
+    "7A", "7B", "7C", "7D",
+  ];
+
+  const handleSeatClick = (seat) => {
+    if (selectedSeats.includes(seat)) {
+      setSelectedSeats(
+        selectedSeats.filter((item) => item !== seat)
+      );
+      return;
+    }
+
+    if (selectedSeats.length >= passengers) {
+      alert(`You can select only ${passengers} seat(s).`);
+      return;
+    }
+
+    setSelectedSeats([...selectedSeats, seat]);
+  };
+
+  const handleContinue = () => {
+    if (selectedSeats.length !== passengers) {
+      alert(`Please select ${passengers} seat(s).`);
+      return;
+    }
+
+    navigate("/payment", {
+      state: {
+        flight,
+        from,
+        to,
+        travelDate,
+        passengers,
+        userId,
+        passengerId,
+        passengerName,
+        selectedSeats,
+      },
+    });
+  };
+
+  if (!flight || !userId || !passengerId) {
+    return (
+      <div
+        style={{
+          padding: "50px",
+          textAlign: "center",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <h2>Booking Information Missing</h2>
+
+        <p>Please start the booking process again.</p>
+
+        <button onClick={() => navigate("/")}>
+          Back to Home
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "1000px",
+          margin: "0 auto",
+        }}
+      >
+        <h1>Select Your Seat</h1>
+
+        <p>
+          {flight.airlineName || flight.airline} -{" "}
+          {flight.flightNumber}
+        </p>
+
+        <p>
+          {from} → {to} | {travelDate}
+        </p>
+
+        <hr />
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "30px",
+            marginTop: "30px",
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h2>Aircraft Seats</h2>
+
+            <p>
+              Select {passengers} seat(s)
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "1fr 1fr 40px 1fr 1fr",
+                gap: "12px",
+                marginTop: "25px",
+              }}
+            >
+              {seats.map((seat) => {
+                const selected =
+                  selectedSeats.includes(seat);
+
+                return (
+                  <button
+                    key={seat}
+                    onClick={() => handleSeatClick(seat)}
+                    style={{
+                      padding: "12px 5px",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      background: selected
+                        ? "#0066ff"
+                        : "#e8f0ff",
+                      color: selected
+                        ? "white"
+                        : "#333",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {seat}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                marginTop: "25px",
+                display: "flex",
+                gap: "20px",
+              }}
+            >
+              <span>⬜ Available</span>
+              <span>🟦 Selected</span>
+            </div>
+          </div>
+
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h2>Booking Summary</h2>
+
+            <hr />
+
+            <p>
+              <strong>Passenger:</strong>{" "}
+              {passengerName}
+            </p>
+
+            <p>
+              <strong>Flight:</strong>{" "}
+              {flight.flightNumber}
+            </p>
+
+            <p>
+              <strong>Route:</strong>{" "}
+              {from} → {to}
+            </p>
+
+            <p>
+              <strong>Passengers:</strong>{" "}
+              {passengers}
+            </p>
+
+            <hr />
+
+            <h3>Selected Seats</h3>
+
+            <p>
+              {selectedSeats.length
+                ? selectedSeats.join(", ")
+                : "No seat selected"}
+            </p>
+
+            <h2>
+              ₹{flight.price * passengers}
+            </h2>
+
+            <p>Total Price</p>
+
+            <button
+              onClick={() => navigate(-1)}
+              style={{
+                padding: "12px 20px",
+                marginRight: "10px",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              Back
+            </button>
+
+            <button
+              onClick={handleContinue}
+              style={{
+                padding: "12px 25px",
+                background: "#0066ff",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              Continue to Payment
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SeatSelection;

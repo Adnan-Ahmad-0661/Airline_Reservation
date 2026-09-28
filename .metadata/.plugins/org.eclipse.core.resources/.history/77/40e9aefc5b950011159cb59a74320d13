@@ -1,0 +1,300 @@
+import { useLocation, useNavigate } from "react-router-dom";
+
+function Confirmation() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const state = location.state || {};
+
+  // Multiple seats ke liye
+  const bookings = state.bookings || [];
+
+  // Single booking ke liye fallback
+  const booking = state.booking || bookings[0];
+
+  const passengerName = state.passengerName;
+  const from = state.from;
+  const to = state.to;
+  const travelDate = state.travelDate;
+
+  // Agar booking data nahi mila
+  if (!booking && bookings.length === 0) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#f5f7fa",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "50px",
+            borderRadius: "15px",
+            textAlign: "center",
+            boxShadow: "0 3px 15px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h1>No Booking Found</h1>
+
+          <p>
+            Please complete a booking first.
+          </p>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "900px",
+          margin: "auto",
+        }}
+      >
+        {/* HEADER */}
+
+        <div
+          style={{
+            background: "white",
+            padding: "30px",
+            borderRadius: "15px",
+            textAlign: "center",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h1 style={{ color: "#16a34a" }}>
+            ✓ Booking Confirmed
+          </h1>
+
+          <p>
+            Your flight booking has been confirmed successfully.
+          </p>
+        </div>
+
+        {/* BOOKING DETAILS */}
+
+        <div
+          style={{
+            background: "white",
+            marginTop: "25px",
+            padding: "30px",
+            borderRadius: "15px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>Booking Details</h2>
+
+          <hr />
+
+          <p>
+            <strong>Passenger:</strong>{" "}
+            {passengerName ||
+              booking.passenger?.name ||
+              "-"}
+          </p>
+
+          <p>
+            <strong>Airline:</strong>{" "}
+            {booking.flight?.airlineName ||
+              booking.flight?.airline ||
+              "-"}
+          </p>
+
+          <p>
+            <strong>Flight:</strong>{" "}
+            {booking.flight?.flightNumber || "-"}
+          </p>
+
+          <p>
+            <strong>Route:</strong>{" "}
+            {from || "-"} → {to || "-"}
+          </p>
+
+          <p>
+            <strong>Travel Date:</strong>{" "}
+            {travelDate || "-"}
+          </p>
+        </div>
+
+        {/* ALL BOOKINGS */}
+
+        <div
+          style={{
+            background: "white",
+            marginTop: "25px",
+            padding: "30px",
+            borderRadius: "15px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          <h2>
+            Your Ticket
+            {bookings.length > 1
+              ? `s (${bookings.length})`
+              : ""}
+          </h2>
+
+          <hr />
+
+          {bookings.length > 0 ? (
+            bookings.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  border: "1px solid #ddd",
+                  borderRadius: "10px",
+                  padding: "20px",
+                  marginBottom: "15px",
+                }}
+              >
+                <p>
+                  <strong>PNR:</strong>{" "}
+                  {item.pnr}
+                </p>
+
+                <p>
+                  <strong>Seat:</strong>{" "}
+                  {item.seatNumber}
+                </p>
+
+                <p>
+                  <strong>Passenger:</strong>{" "}
+                  {item.passenger?.name ||
+                    passengerName ||
+                    "-"}
+                </p>
+
+                <p>
+                  <strong>Flight:</strong>{" "}
+                  {item.flight?.flightNumber ||
+                    "-"}
+                </p>
+
+                <p>
+                  <strong>Amount:</strong>{" "}
+                  ₹{item.amount}
+                </p>
+
+                <p>
+                  <strong>Status:</strong>{" "}
+                  <span
+                    style={{
+                      color:
+                        item.status === "CONFIRMED"
+                          ? "#16a34a"
+                          : "#dc2626",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {item.status}
+                  </span>
+                </p>
+              </div>
+            ))
+          ) : (
+            // Single booking fallback
+            <div
+              style={{
+                border: "1px solid #ddd",
+                borderRadius: "10px",
+                padding: "20px",
+              }}
+            >
+              <p>
+                <strong>PNR:</strong>{" "}
+                {booking.pnr}
+              </p>
+
+              <p>
+                <strong>Seat:</strong>{" "}
+                {booking.seatNumber}
+              </p>
+
+              <p>
+                <strong>Amount:</strong>{" "}
+                ₹{booking.amount}
+              </p>
+
+              <p>
+                <strong>Status:</strong>{" "}
+                {booking.status}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* BUTTONS */}
+
+        <div
+          style={{
+            marginTop: "25px",
+            display: "flex",
+            gap: "15px",
+            justifyContent: "center",
+          }}
+        >
+          <button
+            onClick={() =>
+              navigate("/my-bookings")
+            }
+            style={{
+              padding: "13px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            My Bookings
+          </button>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "13px 25px",
+              background: "#e5e7eb",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Confirmation;

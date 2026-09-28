@@ -1,0 +1,174 @@
+import { useLocation, useNavigate } from "react-router-dom";
+
+function Confirmation() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const booking = location.state?.booking;
+
+  if (!booking) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#f5f7fa",
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "12px",
+            textAlign: "center",
+          }}
+        >
+          <h1>No Booking Found</h1>
+
+          <p>Please complete a booking first.</p>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        padding: "40px",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "800px",
+          margin: "auto",
+        }}
+      >
+        <div
+          style={{
+            background: "white",
+            padding: "40px",
+            borderRadius: "12px",
+            boxShadow: "0 3px 12px rgba(0,0,0,0.08)",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: "60px" }}>✅</div>
+
+          <h1 style={{ color: "green" }}>
+            Booking Confirmed!
+          </h1>
+
+          <p>
+            Your flight has been successfully booked.
+          </p>
+
+          <hr />
+
+          <div style={{ textAlign: "left" }}>
+            <h2>Booking Details</h2>
+
+            <p>
+              <strong>Passenger:</strong>{" "}
+              {booking.passengerName}
+            </p>
+
+            <p>
+              <strong>Airline:</strong>{" "}
+              {booking.airline}
+            </p>
+
+            <p>
+              <strong>Flight:</strong>{" "}
+              {booking.flightNumber}
+            </p>
+
+            <p>
+              <strong>Route:</strong>{" "}
+              {booking.from} → {booking.to}
+            </p>
+
+            <p>
+              <strong>Travel Date:</strong>{" "}
+              {booking.travelDate}
+            </p>
+
+            <p>
+              <strong>Passengers:</strong>{" "}
+              {booking.passengers}
+            </p>
+
+            <p>
+              <strong>Seat:</strong>{" "}
+              {booking.selectedSeats.join(", ")}
+            </p>
+
+            <p>
+              <strong>Total Amount:</strong>{" "}
+              ₹{booking.totalPrice}
+            </p>
+
+            <p>
+              <strong>Payment Status:</strong>{" "}
+              <span style={{ color: "green" }}>
+                {booking.paymentStatus}
+              </span>
+            </p>
+          </div>
+
+          <hr />
+
+          <button
+            onClick={() => navigate("/my-bookings")}
+            style={{
+              padding: "12px 25px",
+              marginRight: "10px",
+              background: "#0066ff",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            My Bookings
+          </button>
+
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              padding: "12px 25px",
+              background: "#e5e7eb",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Confirmation;

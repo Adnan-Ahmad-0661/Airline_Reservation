@@ -1,0 +1,241 @@
+import { useNavigate } from "react-router-dom";
+
+function AdminDashboard() {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          background: "#111827",
+          color: "white",
+          padding: "20px 40px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <h1 style={{ margin: 0 }}>✈ Airline Admin Panel</h1>
+          <p style={{ margin: "5px 0 0", color: "#d1d5db" }}>
+            Manage flights, bookings and passengers
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate("/")}
+          style={{
+            padding: "10px 20px",
+            background: "#374151",
+            color: "white",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          Home
+        </button>
+      </div>
+
+      {/* CONTENT */}
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "40px auto",
+          padding: "0 20px",
+        }}
+      >
+        <h2>Dashboard</h2>
+
+        {/* STAT CARDS */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(4, 1fr)",
+            gap: "20px",
+            marginTop: "25px",
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h3>Total Flights</h3>
+            <h1>--</h1>
+          </div>
+
+          <div
+            style={{
+              background: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h3>Total Bookings</h3>
+            <h1>--</h1>
+          </div>
+
+          <div
+            style={{
+              background: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h3>Passengers</h3>
+            <h1>--</h1>
+          </div>
+
+          <div
+            style={{
+              background: "white",
+              padding: "25px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h3>Total Revenue</h3>
+            <h1>₹--</h1>
+          </div>
+        </div>
+
+        {/* ADMIN OPTIONS */}
+        <h2 style={{ marginTop: "45px" }}>
+          Management
+        </h2>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(3, 1fr)",
+            gap: "20px",
+            marginTop: "20px",
+          }}
+        >
+          {/* FLIGHTS */}
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h2>✈️ Flights</h2>
+
+            <p>
+              Add, update and delete flights.
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/admin/flights")
+              }
+              style={{
+                padding: "11px 20px",
+                background: "#0066ff",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              Manage Flights
+            </button>
+          </div>
+
+          {/* BOOKINGS */}
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h2>🎫 Bookings</h2>
+
+            <p>
+              View and manage all bookings.
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/admin/bookings")
+              }
+              style={{
+                padding: "11px 20px",
+                background: "#16a34a",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              Manage Bookings
+            </button>
+          </div>
+
+          {/* PASSENGERS */}
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              boxShadow:
+                "0 3px 12px rgba(0,0,0,0.08)",
+            }}
+          >
+            <h2>👤 Passengers</h2>
+
+            <p>
+              View registered passengers.
+            </p>
+
+            <button
+              onClick={() =>
+                navigate("/admin/passengers")
+              }
+              style={{
+                padding: "11px 20px",
+                background: "#7c3aed",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              View Passengers
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default AdminDashboard;

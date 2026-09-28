@@ -1,0 +1,201 @@
+package com.airline.reservation.config;
+
+import java.util.Arrays;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import com.airline.reservation.security.JwtAuthenticationFilter;
+
+@Configuration
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+	@Autowired
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+	// =====================================================
+	// PASSWORD ENCODER
+	// =====================================================
+
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+
+		return new BCryptPasswordEncoder();
+	}
+
+	// =====================================================
+	// CORS
+	// =====================================================
+
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+
+		CorsConfiguration configuration = new CorsConfiguration();
+
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+
+		configuration.setAllowCredentials(true);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
+		source.registerCorsConfiguration("/**", configuration);
+
+		return source;
+	}
+
+	// =====================================================
+	// SECURITY FILTER CHAIN
+	// =====================================================
+
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+		http
+
+				// =================================================
+				// CORS
+				// =================================================
+
+				.cors(cors -> {
+				})
+
+				// =================================================
+				// CSRF
+				// =================================================
+
+				.csrf(csrf -> csrf.disable())
+
+				// =================================================
+				// SESSION
+				// =================================================
+
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+				// =================================================
+				// AUTHORIZATION
+				// =================================================
+
+				.authorizeHttpRequests(auth -> auth
+
+						// -------------------------------------------------
+						// LOGIN - PUBLIC
+						// -------------------------------------------------
+
+						.antMatchers("/api/auth/login").permitAll()
+
+						// -------------------------------------------------
+						// CREATE USER - PUBLIC
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.POST, "/api/users").permitAll()
+
+						// -------------------------------------------------
+						// OPTIONS / CORS - PUBLIC
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+						// -------------------------------------------------
+						// FLIGHT SEARCH - PUBLIC
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.GET, "/api/flights/**").permitAll()
+
+						// -------------------------------------------------
+						// AIRPORT LIST - PUBLIC
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.GET, "/api/airports/**").permitAll()
+
+						// -------------------------------------------------
+						// ADMIN - ADD FLIGHT
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.POST, "/api/flights/**").hasRole("ADMIN")
+
+						// -------------------------------------------------
+						// ADMIN - UPDATE FLIGHT
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.PUT, "/api/flights/**").hasRole("ADMIN")
+
+						// -------------------------------------------------
+						// ADMIN - DELETE FLIGHT
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.DELETE, "/api/flights/**").hasRole("ADMIN")
+
+						// -------------------------------------------------
+						// ADMIN DASHBOARD
+						// -------------------------------------------------
+
+						.antMatchers("/api/admin/**").hasRole("ADMIN")
+
+						// =================================================
+						// CREATE BOOKING
+						// =================================================
+
+						.antMatchers(HttpMethod.POST, "/api/bookings").hasAnyRole("USER", "ADMIN")
+
+						// -------------------------------------------------
+						// GET BOOKINGS
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.GET, "/api/bookings/**").hasAnyRole("USER", "ADMIN")
+
+						// -------------------------------------------------
+						// CANCEL BOOKING
+						// -------------------------------------------------
+
+						.antMatchers(HttpMethod.PUT, "/api/bookings/cancel/**").hasAnyRole("USER", "ADMIN")
+
+						// -------------------------------------------------
+						// PASSENGER
+						// -------------------------------------------------
+
+						.antMatchers("/api/passengers/**").hasAnyRole("USER", "ADMIN")
+
+						// -------------------------------------------------
+						// USER APIs
+						// -------------------------------------------------
+
+						.antMatchers("/api/users/**").authenticated()
+
+						// -------------------------------------------------
+						// TEST API
+						// -------------------------------------------------
+
+						.antMatchers("/api/test").authenticated()
+
+						// -------------------------------------------------
+						// EVERYTHING ELSE
+						// -------------------------------------------------
+
+						.anyRequest().authenticated())
+
+				// =================================================
+				// JWT FILTER
+				// =================================================
+
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+		return http.build();
+	}
+}

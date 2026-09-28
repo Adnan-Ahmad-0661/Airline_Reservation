@@ -1,0 +1,85 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import Home from "./pages/Home.jsx";
+import Login from "./pages/Login.jsx";
+import Booking from "./pages/Booking.jsx";
+import SeatSelection from "./pages/SeatSelection.jsx";
+import Payment from "./pages/Payment.jsx";
+import Confirmation from "./pages/Confirmation.jsx";
+import MyBookings from "./pages/MyBookings.jsx";
+import ViewTicket from "./pages/ViewTicket.jsx";
+
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminFlights from "./pages/AdminFlights.jsx";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+
+        {/* ================= HOME ================= */}
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        {/* ================= LOGIN ================= */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        {/* ================= BOOKING ================= */}
+        <Route
+          path="/booking"
+          element={<Booking />}
+        />
+
+        {/* ================= SEAT SELECTION ================= */}
+        <Route
+          path="/seat-selection"
+          element={<SeatSelection />}
+        />
+
+        {/* ================= PAYMENT ================= */}
+        <Route
+          path="/payment"
+          element={<Payment />}
+        />
+
+        {/* ================= CONFIRMATION ================= */}
+        <Route
+          path="/confirmation"
+          element={<Confirmation />}
+        />
+
+        {/* ================= MY BOOKINGS ================= */}
+        <Route
+          path="/my-bookings"
+          element={<MyBookings />}
+        />
+
+        {/* ================= VIEW TICKET ================= */}
+        <Route
+          path="/view-ticket/:bookingId"
+          element={<ViewTicket />}
+        />
+
+        {/* ================= ADMIN ================= */}
+        <Route
+          path="/admin"
+          element={<AdminDashboard />}
+        />
+
+        {/* ================= ADMIN FLIGHTS ================= */}
+        <Route
+          path="/admin/flights"
+          element={<AdminFlights />}
+        />
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;

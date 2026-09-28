@@ -1,0 +1,111 @@
+package com.airline.reservation.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.airline.reservation.security.JwtAuthenticationFilter;
+
+@Configuration
+public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+            // CSRF disable for REST API
+            .csrf(csrf -> csrf.disable())
+
+            // JWT is stateless
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(
+                    SessionCreationPolicy.STATELESS
+                )
+            )
+
+            .authorizeHttpRequests(auth -> auth
+
+                // Login - no JWT required
+                .antMatchers("/api/auth/login").permitAll()
+
+                // Test API - any logged-in user
+                .antMatchers("/api/test").authenticated()
+
+                // =========================
+                // FLIGHT APIs
+                // =========================
+
+                // Anyone logged in can view/search flights
+                .antMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/flights/**"
+                ).hasAnyRole("USER", "ADMIN")
+
+                // Only ADMIN can add flight
+                .antMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/flights/**"
+                ).hasRole("ADMIN")
+
+                // Only ADMIN can update flight
+                .antMatchers(
+                    org.springframework.http.HttpMethod.PUT,
+                    "/api/flights/**"
+                ).hasRole("ADMIN")
+
+                // Only ADMIN can delete flight
+                .antMatchers(
+                    org.springframework.http.HttpMethod.DELETE,
+                    "/api/flights/**"
+                ).hasRole("ADMIN")
+
+                // =========================
+                // BOOKING APIs
+                // =========================
+
+                // Logged-in users can create booking
+                .antMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/bookings"
+                ).hasAnyRole("USER", "ADMIN")
+
+                // Logged-in users can view bookings
+                .antMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/bookings/**"
+                ).hasAnyRole("USER", "ADMIN")
+
+                // Logged-in users can cancel
+                .antMatchers(
+                    org.springframework.http.HttpMethod.PUT,
+                    "/api/bookings/cancel/**"
+                ).hasAnyRole("USER", "ADMIN")
+
+                // Everything else requires login
+                .anyRequest().authenticated()
+            )
+
+            // JWT filter
+            .addFilterBefore(
+                jwtAuthenticationFilter,
+                UsernamePasswordAuthenticationFilter.class
+            );
+
+        return http.build();
+    }
+}

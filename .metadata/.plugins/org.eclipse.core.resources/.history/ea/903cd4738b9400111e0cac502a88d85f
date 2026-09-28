@@ -1,0 +1,15 @@
+package com.airline.reservation.service.impl;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.entity.Ticket;
+import com.airline.reservation.service.TicketService;
+
+@Service
+public class TicketServiceImpl implements TicketService {
+
+	
+
+}

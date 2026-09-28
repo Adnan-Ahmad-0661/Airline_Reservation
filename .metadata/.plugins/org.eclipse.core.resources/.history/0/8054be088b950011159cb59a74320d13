@@ -1,0 +1,26 @@
+package com.airline.reservation.service;
+
+import java.util.List;
+
+import com.airline.reservation.entity.Flight;
+
+public interface FlightService {
+
+	Flight addFlight(Flight flight);
+
+	Flight getFlightById(Long id);
+
+	List<Flight> getAllFlights();
+	
+	
+
+
+
+	List<Flight> searchFlights(String source, String destination);
+
+	Flight updateFlight(Long id, Flight flight);
+	void deleteFlight(Long id);
+
+	List<Flight> searchFlight(String sourceCode, String destinationCode);
+
+}

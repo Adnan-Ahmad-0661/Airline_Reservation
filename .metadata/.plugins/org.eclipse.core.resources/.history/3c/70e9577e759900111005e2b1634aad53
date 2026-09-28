@@ -1,0 +1,477 @@
+package com.airline.reservation.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.airline.reservation.entity.Airport;
+import com.airline.reservation.entity.Flight;
+import com.airline.reservation.entity.Route;
+import com.airline.reservation.entity.Seat;
+import com.airline.reservation.repository.AirportRepository;
+import com.airline.reservation.repository.BookingRepository;
+import com.airline.reservation.repository.FlightRepository;
+import com.airline.reservation.repository.RouteRepository;
+import com.airline.reservation.repository.SeatRepository;
+import com.airline.reservation.service.FlightService;
+
+@Service
+public class FlightServiceImpl implements FlightService {
+
+	@Autowired
+	private RouteRepository routeRepository;
+	
+    @Autowired
+    private FlightRepository flightRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private AirportRepository airportRepository;
+
+    @Autowired
+    private SeatRepository seatRepository;
+
+
+    // =====================================================
+    // ADD FLIGHT
+    // =====================================================
+
+    @Override
+    public Flight addFlight(Flight flight) {
+
+        if (flight == null) {
+            throw new RuntimeException(
+                    "Flight data is required");
+        }
+
+        if (flight.getSourceAirport() == null ||
+                flight.getSourceAirport().getId() == null) {
+
+            throw new RuntimeException(
+                    "Source airport is required");
+        }
+
+        if (flight.getDestinationAirport() == null ||
+                flight.getDestinationAirport().getId() == null) {
+
+            throw new RuntimeException(
+                    "Destination airport is required");
+        }
+
+        Long sourceId =
+                flight.getSourceAirport().getId();
+
+        Long destinationId =
+                flight.getDestinationAirport().getId();
+
+        if (sourceId.equals(destinationId)) {
+
+            throw new RuntimeException(
+                    "Source and destination cannot be same");
+        }
+
+        // =================================================
+        // FIND SOURCE AIRPORT
+        // =================================================
+
+        Airport sourceAirport =
+                airportRepository.findById(sourceId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Source airport not found: "
+                                                + sourceId));
+
+        // =================================================
+        // FIND DESTINATION AIRPORT
+        // =================================================
+
+        Airport destinationAirport =
+                airportRepository.findById(destinationId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Destination airport not found: "
+                                                + destinationId));
+
+        flight.setSourceAirport(sourceAirport);
+        flight.setDestinationAirport(destinationAirport);
+
+
+        // =================================================
+        // STATUS
+        // =================================================
+
+        if (flight.getStatus() == null ||
+                flight.getStatus().trim().isEmpty()) {
+
+            flight.setStatus("ACTIVE");
+        }
+     // =================================================
+     // FIND ROUTE
+     // =================================================
+
+     if (flight.getRoute() == null ||
+             flight.getRoute().getId() == null) {
+
+         throw new RuntimeException(
+                 "Route is required");
+     }
+
+     Long routeId = flight.getRoute().getId();
+
+     Route route =
+             routeRepository.findById(routeId)
+                     .orElseThrow(() ->
+                             new RuntimeException(
+                                     "Route not found: " + routeId));
+
+     flight.setRoute(route);
+
+        // =================================================
+        // TOTAL SEATS
+        // =================================================
+
+        if (flight.getTotalSeats() == null ||
+                flight.getTotalSeats() <= 0) {
+
+            flight.setTotalSeats(52);
+        }
+
+
+        // =================================================
+        // AVAILABLE SEATS
+        // =================================================
+
+        if (flight.getAvailableSeats() == null ||
+                flight.getAvailableSeats() < 0) {
+
+            flight.setAvailableSeats(
+                    flight.getTotalSeats());
+        }
+
+
+        // =================================================
+        // SAVE FLIGHT
+        // =================================================
+
+        Flight savedFlight =
+                flightRepository.save(flight);
+
+
+        // =================================================
+        // CREATE SEATS
+        // =================================================
+
+        createSeatsForFlight(savedFlight);
+
+
+        return savedFlight;
+    }
+
+
+    // =====================================================
+    // CREATE SEATS FOR FLIGHT
+    // =====================================================
+
+    private void createSeatsForFlight(Flight flight) {
+
+        for (int row = 1; row <= 13; row++) {
+
+            for (char column = 'A';
+                    column <= 'D';
+                    column++) {
+
+                String seatNumber =
+                        row + String.valueOf(column);
+
+                Seat seat = new Seat();
+
+                seat.setSeatNumber(seatNumber);
+
+                seat.setSeatClass(
+                        getSeatClass(row));
+
+                seat.setStatus("AVAILABLE");
+
+                seat.setFlight(flight);
+
+                seatRepository.save(seat);
+            }
+        }
+    }
+
+
+    // =====================================================
+    // GET SEAT CLASS
+    // =====================================================
+
+    private String getSeatClass(int row) {
+
+        // 1A - 6D
+        if (row <= 6) {
+            return "ECONOMY";
+        }
+
+        // 7A - 9D
+        if (row <= 9) {
+            return "PREMIUM_ECONOMY";
+        }
+
+        // 10A - 11D
+        if (row <= 11) {
+            return "BUSINESS";
+        }
+
+        // 12A - 13D
+        return "FIRST_CLASS";
+    }
+
+
+    // =====================================================
+    // GET ALL FLIGHTS
+    // =====================================================
+
+    @Override
+    public List<Flight> getAllFlights() {
+
+        return flightRepository.findAll();
+    }
+
+
+    // =====================================================
+    // GET FLIGHT BY ID
+    // =====================================================
+
+    @Override
+    public Flight getFlightById(Long id) {
+
+        return flightRepository
+                .findById(id)
+                .orElse(null);
+    }
+
+
+    // =====================================================
+    // UPDATE FLIGHT
+    // =====================================================
+
+    @Override
+    public Flight updateFlight(
+            Long id,
+            Flight flight) {
+
+        Flight existingFlight =
+                flightRepository
+                        .findById(id)
+                        .orElse(null);
+
+        if (existingFlight == null) {
+            return null;
+        }
+
+
+        // =================================================
+        // BASIC DETAILS
+        // =================================================
+
+        existingFlight.setFlightNumber(
+                flight.getFlightNumber());
+
+        existingFlight.setAirlineName(
+                flight.getAirlineName());
+
+
+        // =================================================
+        // CLASS WISE PRICES
+        // =================================================
+
+        existingFlight.setEconomyPrice(
+                flight.getEconomyPrice());
+
+        existingFlight.setPremiumEconomyPrice(
+                flight.getPremiumEconomyPrice());
+
+        existingFlight.setBusinessPrice(
+                flight.getBusinessPrice());
+
+        existingFlight.setFirstClassPrice(
+                flight.getFirstClassPrice());
+
+
+        // =================================================
+        // STATUS
+        // =================================================
+
+        existingFlight.setStatus(
+                flight.getStatus());
+
+
+        // =================================================
+        // SEATS
+        // =================================================
+
+        existingFlight.setAvailableSeats(
+                flight.getAvailableSeats());
+
+        existingFlight.setTotalSeats(
+                flight.getTotalSeats());
+
+
+        // =================================================
+        // SOURCE AIRPORT
+        // =================================================
+
+        if (flight.getSourceAirport() != null &&
+                flight.getSourceAirport().getId() != null) {
+
+            Airport sourceAirport =
+                    airportRepository.findById(
+                            flight.getSourceAirport().getId())
+                            .orElseThrow(() ->
+                                    new RuntimeException(
+                                            "Source airport not found"));
+
+            existingFlight.setSourceAirport(
+                    sourceAirport);
+        }
+
+
+        // =================================================
+        // DESTINATION AIRPORT
+        // =================================================
+
+        if (flight.getDestinationAirport() != null &&
+                flight.getDestinationAirport().getId() != null) {
+
+            Airport destinationAirport =
+                    airportRepository.findById(
+                            flight.getDestinationAirport().getId())
+                            .orElseThrow(() ->
+                                    new RuntimeException(
+                                            "Destination airport not found"));
+
+            existingFlight.setDestinationAirport(
+                    destinationAirport);
+        }
+
+
+        return flightRepository.save(existingFlight);
+    }
+
+
+    // =====================================================
+    // DELETE FLIGHT
+    // =====================================================
+
+    @Override
+    public void deleteFlight(Long id) {
+
+        if (!flightRepository.existsById(id)) {
+
+            throw new RuntimeException(
+                    "Flight not found with ID: " + id);
+        }
+
+
+        // =================================================
+        // CHECK BOOKINGS
+        // =================================================
+
+        if (bookingRepository.existsByFlightId(id)) {
+
+            throw new RuntimeException(
+                    "Flight cannot be deleted because bookings exist");
+        }
+
+
+        // =================================================
+        // DELETE SEATS FIRST
+        // =================================================
+
+        seatRepository.deleteByFlightId(id);
+
+
+        // =================================================
+        // DELETE FLIGHT
+        // =================================================
+
+        flightRepository.deleteById(id);
+    }
+
+
+    // =====================================================
+    // SEARCH BY CITY
+    // =====================================================
+
+    @Override
+    public List<Flight> searchFlight(
+            String source,
+            String destination) {
+
+        Airport sourceAirport =
+                airportRepository
+                        .findByCityIgnoreCase(
+                                source.trim());
+
+        Airport destinationAirport =
+                airportRepository
+                        .findByCityIgnoreCase(
+                                destination.trim());
+
+        if (sourceAirport == null ||
+                destinationAirport == null) {
+
+            return List.of();
+        }
+
+        return flightRepository
+                .findBySourceAirportAndDestinationAirport(
+                        sourceAirport,
+                        destinationAirport);
+    }
+
+
+    // =====================================================
+    // SEARCH BY AIRPORT CODE
+    // =====================================================
+
+    @Override
+    public List<Flight> searchFlights(
+            String source,
+            String destination) {
+
+        return flightRepository
+                .findBySourceAirportAirportCodeAndDestinationAirportAirportCode(
+                        source.trim().toUpperCase(),
+                        destination.trim().toUpperCase());
+    }
+
+
+    // =====================================================
+    // CANCEL FLIGHT
+    // =====================================================
+
+    @Override
+    public Flight cancelFlight(Long id) {
+
+        Flight flight =
+                flightRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Flight not found with ID: "
+                                                + id));
+
+        if ("CANCELLED".equalsIgnoreCase(
+                flight.getStatus())) {
+
+            throw new RuntimeException(
+                    "Flight is already cancelled");
+        }
+
+        flight.setStatus("CANCELLED");
+
+        return flightRepository.save(flight);
+    }
+}
