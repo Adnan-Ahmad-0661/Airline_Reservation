@@ -1,0 +1,54 @@
+package com.airline.reservation.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.airline.reservation.entity.Flight;
+import com.airline.reservation.entity.Seat;
+import com.airline.reservation.repository.FlightRepository;
+import com.airline.reservation.repository.SeatRepository;
+
+@RestController
+@RequestMapping("/api/seats")
+@CrossOrigin(origins = "http://localhost:5173")
+public class SeatController {
+
+    @Autowired
+    private SeatRepository seatRepository;
+
+    @Autowired
+    private FlightRepository flightRepository;
+
+    // =====================================================
+    // GET SEATS BY FLIGHT ID
+    // =====================================================
+
+    @GetMapping("/flight/{flightId}")
+    public ResponseEntity<?> getSeatsByFlight(
+            @PathVariable Long flightId) {
+
+        try {
+
+            Flight flight = flightRepository.findById(flightId)
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Flight not found with ID: " + flightId
+                            )
+                    );
+
+            List<Seat> seats =
+                    seatRepository.findByFlight(flight);
+
+            return ResponseEntity.ok(seats);
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(e.getMessage());
+        }
+    }
+}
