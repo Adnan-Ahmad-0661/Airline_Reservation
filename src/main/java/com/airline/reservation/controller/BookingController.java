@@ -3,10 +3,18 @@ package com.airline.reservation.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.airline.reservation.dto.BookingResponse;
 import com.airline.reservation.entity.Booking;
@@ -26,304 +34,189 @@ import com.airline.reservation.service.BookingService;
 
 public class BookingController {
 
-    @Autowired
-    private BookingService bookingService;
+	@Autowired
+	private BookingService bookingService;
 
-    @Autowired
-    private UserRepository userRepository;
+	@Autowired
+	private UserRepository userRepository;
 
+	// =====================================================
+	// CREATE BOOKING
+	// =====================================================
 
-    // =====================================================
-    // CREATE BOOKING
-    // =====================================================
+	@PostMapping
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<?> createBooking(@RequestParam Long flightId, @RequestParam Long passengerId,
+			@RequestParam String seatNumber,
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<?> createBooking(
-            @RequestParam Long flightId,
-            @RequestParam Long passengerId,
-            @RequestParam String seatNumber,
-            Authentication authentication) {
+			Authentication authentication) {
 
-        try {
+		try {
 
-            // =================================================
-            // AUTHENTICATION CHECK
-            // =================================================
+			// =================================================
+			// AUTHENTICATION CHECK
+			// =================================================
 
-            if (authentication == null ||
-                !authentication.isAuthenticated()) {
+			if (authentication == null || !authentication.isAuthenticated()) {
 
-                return ResponseEntity
-                        .status(401)
-                        .body("Please login first to book a ticket.");
-            }
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Please login first to book a ticket.");
+			}
 
+			// =================================================
+			// JWT USER EMAIL
+			// =================================================
 
-            // =================================================
-            // JWT USER EMAIL
-            // =================================================
+			String email = authentication.getName();
+			// =================================================
+			// FIND USER USING JWT EMAIL
+			// =================================================
 
-            String email =
-                    authentication.getName();
+			User user = userRepository.findByEmail(email);
 
+			if (user == null) {
 
-            System.out.println(
-                    "================================"
-            );
+				return ResponseEntity.status(404).body("Logged-in user not found.");
+			}
 
-            System.out.println(
-                    "CREATE BOOKING"
-            );
+			// =================================================
+			// GET USER ID FROM DATABASE
+			// =================================================
 
-            System.out.println(
-                    "Logged-in Email: " + email
-            );
+			Long userId = user.getId();
 
-            System.out.println(
-                    "Flight ID: " + flightId
-            );
+			// =================================================
+			// CREATE BOOKING
+			// =================================================
 
-            System.out.println(
-                    "Passenger ID: " + passengerId
-            );
+			Booking booking = bookingService.createBooking(userId, flightId, passengerId, seatNumber);
 
-            System.out.println(
-                    "Seat: " + seatNumber
-            );
+			// =================================================
+			// SUCCESS
+			// =================================================
 
-            System.out.println(
-                    "================================"
-            );
+			return ResponseEntity.ok(booking);
 
+		} catch (RuntimeException e) {
 
-            // =================================================
-            // FIND USER USING JWT EMAIL
-            // =================================================
+			e.printStackTrace();
 
-            User user =
-                    userRepository.findByEmail(email);
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
 
+	// =====================================================
+	// GET ALL BOOKINGS
+	// =====================================================
 
-            if (user == null) {
+	@GetMapping
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<List<BookingResponse>> getAllBookings() {
 
-                return ResponseEntity
-                        .status(404)
-                        .body("Logged-in user not found.");
-            }
+		return ResponseEntity.ok(bookingService.getAllBookings());
+	}
 
+	// =====================================================
+	// GET MY BOOKINGS
+	// =====================================================
 
-            // =================================================
-            // GET USER ID FROM DATABASE
-            // =================================================
+	@GetMapping("/my")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<?> getMyBookings(Authentication authentication) {
 
-            Long userId =
-                    user.getId();
+		try {
 
+			if (authentication == null || !authentication.isAuthenticated()) {
 
-            // =================================================
-            // CREATE BOOKING
-            // =================================================
+				return ResponseEntity.status(401).body("Please login first.");
+			}
 
-            Booking booking =
-                    bookingService.createBooking(
-                            userId,
-                            flightId,
-                            passengerId,
-                            seatNumber
-                    );
+			String email = authentication.getName();
 
+			Long userId = getUserIdByEmail(email);
 
-            // =================================================
-            // SUCCESS
-            // =================================================
+			return ResponseEntity.ok(bookingService.getBookingsByUserId(userId));
 
-            return ResponseEntity.ok(
-                    booking
-            );
+		} catch (RuntimeException e) {
 
+			e.printStackTrace();
 
-        } catch (RuntimeException e) {
+			return ResponseEntity.status(404).body(e.getMessage());
+		}
+	}
 
-            e.printStackTrace();
+	// =====================================================
+	// GET BOOKING BY ID
+	// =====================================================
 
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
-    }
+	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
 
+		BookingResponse booking = bookingService.getBookingById(id);
 
-    // =====================================================
-    // GET ALL BOOKINGS
-    // =====================================================
+		if (booking == null) {
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<List<BookingResponse>> getAllBookings() {
+			return ResponseEntity.notFound().build();
+		}
 
-        return ResponseEntity.ok(
-                bookingService.getAllBookings()
-        );
-    }
+		return ResponseEntity.ok(booking);
+	}
 
+	// =====================================================
+	// GET BOOKING BY PNR
+	// =====================================================
 
-    // =====================================================
-    // GET MY BOOKINGS
-    // =====================================================
+	@GetMapping("/pnr/{pnr}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<BookingResponse> getBookingByPnr(@PathVariable String pnr) {
 
-    @GetMapping("/my")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<?> getMyBookings(
-            Authentication authentication) {
+		BookingResponse booking = bookingService.getBookingByPnr(pnr);
 
-        try {
+		if (booking == null) {
 
-            if (authentication == null ||
-                !authentication.isAuthenticated()) {
+			return ResponseEntity.notFound().build();
+		}
 
-                return ResponseEntity
-                        .status(401)
-                        .body("Please login first.");
-            }
+		return ResponseEntity.ok(booking);
+	}
 
+	// =====================================================
+	// CANCEL BOOKING
+	// =====================================================
 
-            String email =
-                    authentication.getName();
+	@PutMapping("/cancel/{bookingId}")
+	@PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+	public ResponseEntity<?> cancelBooking(@PathVariable Long bookingId) {
 
+		try {
 
-            Long userId =
-                    getUserIdByEmail(email);
+			System.out.println("CANCEL BOOKING ID: " + bookingId);
 
+			Booking booking = bookingService.cancelBooking(bookingId);
 
-            return ResponseEntity.ok(
-                    bookingService.getBookingsByUserId(userId)
-            );
+			return ResponseEntity.ok(booking);
 
+		} catch (RuntimeException e) {
 
-        } catch (RuntimeException e) {
+			e.printStackTrace();
 
-            e.printStackTrace();
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
+	}
 
-            return ResponseEntity
-                    .status(404)
-                    .body(e.getMessage());
-        }
-    }
+	// =====================================================
+	// GET USER ID FROM JWT EMAIL
+	// =====================================================
 
+	private Long getUserIdByEmail(String email) {
 
-    // =====================================================
-    // GET BOOKING BY ID
-    // =====================================================
+		User user = userRepository.findByEmail(email);
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<BookingResponse> getBookingById(
-            @PathVariable Long id) {
+		if (user == null) {
 
-        BookingResponse booking =
-                bookingService.getBookingById(id);
+			throw new RuntimeException("USER NOT FOUND");
+		}
 
-
-        if (booking == null) {
-
-            return ResponseEntity
-                    .notFound()
-                    .build();
-        }
-
-
-        return ResponseEntity.ok(
-                booking
-        );
-    }
-
-
-    // =====================================================
-    // GET BOOKING BY PNR
-    // =====================================================
-
-    @GetMapping("/pnr/{pnr}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<BookingResponse> getBookingByPnr(
-            @PathVariable String pnr) {
-
-        BookingResponse booking =
-                bookingService.getBookingByPnr(pnr);
-
-
-        if (booking == null) {
-
-            return ResponseEntity
-                    .notFound()
-                    .build();
-        }
-
-
-        return ResponseEntity.ok(
-                booking
-        );
-    }
-
-
-    // =====================================================
-    // CANCEL BOOKING
-    // =====================================================
-
-    @PutMapping("/cancel/{bookingId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<?> cancelBooking(
-            @PathVariable Long bookingId) {
-
-        try {
-
-            System.out.println(
-                    "CANCEL BOOKING ID: "
-                    + bookingId
-            );
-
-
-            Booking booking =
-                    bookingService.cancelBooking(
-                            bookingId
-                    );
-
-
-            return ResponseEntity.ok(
-                    booking
-            );
-
-
-        } catch (RuntimeException e) {
-
-            e.printStackTrace();
-
-            return ResponseEntity
-                    .badRequest()
-                    .body(e.getMessage());
-        }
-    }
-
-
-    // =====================================================
-    // GET USER ID FROM JWT EMAIL
-    // =====================================================
-
-    private Long getUserIdByEmail(
-            String email) {
-
-        User user =
-                userRepository.findByEmail(email);
-
-
-        if (user == null) {
-
-            throw new RuntimeException(
-                    "USER NOT FOUND"
-            );
-        }
-
-
-        return user.getId();
-    }
+		return user.getId();
+	}
 }

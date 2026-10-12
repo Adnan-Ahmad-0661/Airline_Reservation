@@ -25,59 +25,25 @@ public class JwtUtil {
     // =========================
     // ACCESS TOKEN
     // =========================
-    public String generateAccessToken(
-            String email,
-            String role) {
+	public String generateAccessToken(String email, String role) {
 
-        return Jwts.builder()
-                .setSubject(email)
-                .claim("role", role)
-                .claim("type", "ACCESS")
-                .setIssuedAt(new Date())
-                .setExpiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + ACCESS_TOKEN_EXPIRATION
-                        )
-                )
-                .signWith(
-                        Keys.hmacShaKeyFor(
-                                SECRET_KEY.getBytes(
-                                        StandardCharsets.UTF_8
-                                )
-                        ),
-                        SignatureAlgorithm.HS256
-                )
-                .compact();
-    }
+		return Jwts.builder().setSubject(email).claim("role", role).claim("type", "ACCESS").setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION))
+				.signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
+				.compact();
+	}
 
 
     // =========================
     // REFRESH TOKEN
     // =========================
-    public String generateRefreshToken(
-            String email) {
+	public String generateRefreshToken(String email) {
 
-        return Jwts.builder()
-                .setSubject(email)
-                .claim("type", "REFRESH")
-                .setIssuedAt(new Date())
-                .setExpiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + REFRESH_TOKEN_EXPIRATION
-                        )
-                )
-                .signWith(
-                        Keys.hmacShaKeyFor(
-                                SECRET_KEY.getBytes(
-                                        StandardCharsets.UTF_8
-                                )
-                        ),
-                        SignatureAlgorithm.HS256
-                )
-                .compact();
-    }
+		return Jwts.builder().setSubject(email).claim("type", "REFRESH").setIssuedAt(new Date())
+				.setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION))
+				.signWith(Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
+				.compact();
+	}
 
 
     // =========================
@@ -124,13 +90,10 @@ public class JwtUtil {
     // =========================
     // GET TOKEN TYPE
     // =========================
-    public String getTokenType(
-            String token) {
+	public String getTokenType(String token) {
 
-        return getClaims(token)
-                .get("type", String.class);
-    }
-
+		return getClaims(token).get("type", String.class);
+	}
 
     // =========================
     // VALIDATE TOKEN

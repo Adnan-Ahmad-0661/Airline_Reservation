@@ -4,17 +4,18 @@ import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import com.airline.reservation.dto.UserResponse;
+import com.airline.reservation.dto.RegisterRequestDto;
+import com.airline.reservation.dto.UserResponseDto;
 import com.airline.reservation.entity.User;
 
 public interface UserService {
 
-    UserResponse addUser(
-            User user,
+    UserResponseDto addUser(
+            RegisterRequestDto dto,
             MultipartFile photo
     );
 
-    UserResponse getUserById(Long id);
+    UserResponseDto getUserById(Long id);
 
     List<User> getAllUsers();
 
@@ -22,9 +23,11 @@ public interface UserService {
 
     void deleteUser(Long id);
 
-    UserResponse updateProfilePhoto(
+    UserResponseDto updateProfilePhoto(
             Long id,
             MultipartFile photo
     );
+    
+    
 }
 

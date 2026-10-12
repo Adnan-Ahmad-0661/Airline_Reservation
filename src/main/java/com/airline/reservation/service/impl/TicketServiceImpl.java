@@ -32,7 +32,7 @@ public class TicketServiceImpl implements TicketService {
 				.orElseThrow(() -> new RuntimeException("Booking not found"));
 
 		// Check payment
-		Payment payment = paymentRepository.findByBookingId(bookingId);
+		Payment payment = paymentRepository.findFirstByBookings_Id(bookingId);
 
 		if (payment == null) {
 			throw new RuntimeException("Payment not completed");

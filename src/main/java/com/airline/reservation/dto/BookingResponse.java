@@ -12,7 +12,7 @@ public class BookingResponse {
 
 	private Long id;
 	private String pnr;
-	private UserResponse user;
+	private UserResponseDto user;
 	private Double amount;
 	private LocalDateTime bookingDate;
 	private String seatNumber;

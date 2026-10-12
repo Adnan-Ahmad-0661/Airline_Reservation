@@ -39,6 +39,10 @@ public class User {
 	private LocalDateTime loginTime;
 
 	private LocalDateTime lastActive;
+	
+	
+	
+	
 
 	@Lob
 	@Column(columnDefinition = "LONGBLOB")

@@ -7,7 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.airline.reservation.dto.UserResponse;
+import com.airline.reservation.dto.RegisterRequestDto;
+import com.airline.reservation.dto.UserResponseDto;
 import com.airline.reservation.entity.User;
 import com.airline.reservation.service.UserService;
 
@@ -24,13 +25,12 @@ public class UserController {
 	// =====================================================
 
 	@PostMapping(consumes = "multipart/form-data")
-	public UserResponse addUser(
-
-			@RequestPart("user") User user,
+	public UserResponseDto createUser(
+			@RequestPart("user") RegisterRequestDto dto,
 
 			@RequestPart(value = "photo", required = false) MultipartFile photo) {
 
-		return userService.addUser(user, photo);
+		return userService.addUser(dto, photo);
 	}
 
 	// =====================================================
@@ -48,9 +48,9 @@ public class UserController {
 	// =====================================================
 
 	@GetMapping("/{id}")
-	public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+	public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
 
-		UserResponse user = userService.getUserById(id);
+		UserResponseDto user = userService.getUserById(id);
 
 		if (user == null) {
 			return ResponseEntity.notFound().build();
@@ -80,7 +80,7 @@ public class UserController {
 	// =====================================================
 
 	@PutMapping(value = "/{id}/photo", consumes = "multipart/form-data")
-	public ResponseEntity<UserResponse> updateProfilePhoto(
+	public ResponseEntity<UserResponseDto> updateProfilePhoto(
 
 			@PathVariable Long id,
 

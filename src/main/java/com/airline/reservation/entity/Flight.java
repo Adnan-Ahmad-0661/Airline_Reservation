@@ -1,6 +1,8 @@
 package com.airline.reservation.entity;
 
 
+import org.springframework.data.annotation.Version;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -45,4 +47,9 @@ public class Flight {
     private Integer availableSeats;
 
     private Integer totalSeats = 52;
+    
+    
+//    @Transient
+    @Version
+    private Long versionId;
 }

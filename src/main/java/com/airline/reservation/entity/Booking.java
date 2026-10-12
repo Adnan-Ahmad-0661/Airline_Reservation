@@ -2,6 +2,8 @@ package com.airline.reservation.entity;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -43,5 +45,13 @@ public class Booking {
 	@ManyToOne
 	@JoinColumn(name = "passenger_id")
 	private Passenger passenger;
+	
+	
 
+	
+	@ManyToOne
+	@JoinColumn(name = "payment_id")
+	@JsonIgnore
+	private Payment payment;
+	
 }

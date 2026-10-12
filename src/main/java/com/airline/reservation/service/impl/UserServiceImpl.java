@@ -8,7 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.airline.reservation.dto.UserResponse;
+import com.airline.reservation.dto.RegisterRequestDto;
+import com.airline.reservation.dto.UserResponseDto;
 import com.airline.reservation.entity.User;
 import com.airline.reservation.repository.UserRepository;
 import com.airline.reservation.service.UserService;
@@ -23,53 +24,56 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
 
 
-    // ADD USER
-    @Override
-    public UserResponse addUser(User user, MultipartFile photo) {
+   
+ // ADD USER
+ @Override
+ public UserResponseDto addUser(
+         RegisterRequestDto dto,
+         MultipartFile photo) {
 
-        User existingUser =
-                userRepository.findByEmail(user.getEmail());
+     // Check duplicate email
+     User existingUser =
+             userRepository.findByEmail(dto.getEmail());
 
-        if (existingUser != null) {
-            throw new RuntimeException("User Already exist");
-        }
+     if (existingUser != null) {
+         throw new RuntimeException("Email already registered");
+     }
 
-        // Encrypt password
-        user.setPassword(
-                passwordEncoder.encode(user.getPassword())
-        );
+     // Create NEW user
+     User user = new User();
 
-        // Default role
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            user.setRole("USER");
-        }
+     // Set user details
+     user.setName(dto.getName());
+     user.setEmail(dto.getEmail());
 
-        // New user offline
-        user.setOnline(false);
+     // Encrypt password
+     user.setPassword(
+             passwordEncoder.encode(dto.getPassword())
+     );
 
-        // Save profile photo
-        if (photo != null && !photo.isEmpty()) {
+     // Default role
+     user.setRole("USER");
 
-            try {
-                user.setProfilePhoto(photo.getBytes());
+     // Save profile photo
+     if (photo != null && !photo.isEmpty()) {
+         try {
+             user.setProfilePhoto(photo.getBytes());
+         } catch (Exception e) {
+             throw new RuntimeException(
+                     "Failed to upload profile photo", e);
+         }
+     }
 
-            } catch (Exception e) {
-                throw new RuntimeException(
-                        "Failed to upload profile photo",
-                        e
-                );
-            }
-        }
+     // Save user
+     User savedUser = userRepository.save(user);
 
-        User savedUser = userRepository.save(user);
-
-        return convertToResponse(savedUser);
-    }
-
+     return convertToResponse(savedUser);
+ }
+ 
 
     // GET USER BY ID
     @Override
-    public UserResponse getUserById(Long id) {
+    public UserResponseDto getUserById(Long id) {
 
         User user =
                 userRepository.findById(id)
@@ -125,7 +129,7 @@ public class UserServiceImpl implements UserService {
 
     // CHANGE / ADD PROFILE PHOTO
     @Override
-    public UserResponse updateProfilePhoto(
+    public UserResponseDto updateProfilePhoto(
             Long id,
             MultipartFile photo) {
 
@@ -167,10 +171,10 @@ public class UserServiceImpl implements UserService {
 
 
     // USER → RESPONSE
-    private UserResponse convertToResponse(User user) {
+    private UserResponseDto convertToResponse(User user) {
 
-        UserResponse response =
-                new UserResponse();
+        UserResponseDto response =
+                new UserResponseDto();
 
         response.setId(user.getId());
 

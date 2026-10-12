@@ -29,4 +29,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         AND u.lastActive < :time
     """)
     void markUsersOffline(LocalDateTime time);
+    
+   
+    Boolean existsByEmail(String email);
 }

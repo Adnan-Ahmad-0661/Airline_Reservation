@@ -18,16 +18,7 @@ public class AirportServiceImpl implements AirportService {
 	@Override
 	public Airport addAirport(Airport airport) {
 
-		if (airport.getAirportCode() == null || airport.getAirportCode().trim().isEmpty()) {
-
-			throw new RuntimeException("Airport code is required");
-		}
-
-		if (airport.getCity() == null || airport.getCity().trim().isEmpty()) {
-
-			throw new RuntimeException("City is required");
-		}
-
+	
 		airport.setAirportCode(airport.getAirportCode().trim().toUpperCase());
 
 		airport.setCity(airport.getCity().trim());

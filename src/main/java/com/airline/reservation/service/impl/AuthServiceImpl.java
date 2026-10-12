@@ -18,149 +18,107 @@ import com.airline.reservation.service.AuthService;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+	@Autowired
+	private UserRepository userRepository;
 
-    @Autowired
-    private JwtUtil jwtUtil;
+	@Autowired
+	private JwtUtil jwtUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
-    @Override
-    public LoginResponse login(LoginRequest request) {
+	@Override
+	public LoginResponse login(LoginRequest request) {
 
-        System.out.println("LOGIN EMAIL: " + request.getEmail());
+		System.out.println("LOGIN EMAIL: " + request.getEmail());
 
-        // =====================================================
-        // FIND USER
-        // =====================================================
+		// =====================================================
+		// FIND USER
+		// =====================================================
 
-        User user = userRepository.findByEmail(request.getEmail());
+		User user = userRepository.findByEmail(request.getEmail());
 
-        if (user == null) {
-            throw new RuntimeException("USER NOT FOUND");
-        }
+		if (user == null) {
+			throw new RuntimeException("USER NOT FOUND");
+		}
 
-        // =====================================================
-        // PASSWORD CHECK
-        // =====================================================
+		// =====================================================
+		// PASSWORD CHECK
+		// =====================================================
 
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
+		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 
-            throw new RuntimeException("WRONG PASSWORD");
-        }
+			throw new RuntimeException("WRONG PASSWORD");
+		}
 
-        // =====================================================
-        // USER ONLINE
-        // =====================================================
+		// =====================================================
+		// USER ONLINE
+		// =====================================================
 
-        LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now();
 
-        user.setOnline(true);
+		user.setOnline(true);
 
-        // Current login time
-        user.setLoginTime(now);
+		// Current login time
+		user.setLoginTime(now);
 
-        // Last activity also starts from login time
-        user.setLastActive(now);
+		// Last activity also starts from login time
+		user.setLastActive(now);
 
-        userRepository.save(user);
+		userRepository.save(user);
 
-        // =====================================================
-        // ACCESS TOKEN 
-        // =====================================================
-        String accessToken =
-                jwtUtil.generateAccessToken(
-                        user.getEmail(),
-                        user.getRole()
-                );
-        // =====================================================
-        // rEFRESH TOKEN 
-        // =====================================================
-        String refreshToken =
-                jwtUtil.generateRefreshToken(
-                        user.getEmail()
-                );
+		// =====================================================
+		// ACCESS TOKEN
+		// =====================================================
+		String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
+		// =====================================================
+		// rEFRESH TOKEN
+		// =====================================================
+		String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
 
-        // =====================================================
-        // LOGIN RESPONSE
-        // =====================================================
+		// =====================================================
+		// LOGIN RESPONSE
+		// =====================================================
 
-        return new LoginResponse(
-                accessToken, refreshToken,
-                user.getRole(),
-                user.getId(),
-                user.getName()
-        );
-    }
+		return new LoginResponse(accessToken, refreshToken, user.getRole(), user.getId(), user.getName());
+	}
 
-    @Override
-    public ResponseEntity<LoginResponse> refreshToken(String refreshToken) {
+	@Override
+	public ResponseEntity<LoginResponse> refreshToken(String refreshToken) {
 
-        try {
+		try {
+			if (refreshToken == null || refreshToken.isBlank()) {
+				return ResponseEntity.status(401).build();
+			}
 
-            // Refresh token validate
-            if (!jwtUtil.validateToken(refreshToken)) {
-                return ResponseEntity.status(401).build();
-            }
+			if (!jwtUtil.validateToken(refreshToken)) {
+				return ResponseEntity.status(401).build();
+			}
 
-            // Token type check
-            String tokenType =
-                    jwtUtil.getTokenType(refreshToken);
+			if (!"REFRESH".equals(jwtUtil.getTokenType(refreshToken))) {
+				return ResponseEntity.status(401).build();
+			}
 
-            if (!"REFRESH".equals(tokenType)) {
-                return ResponseEntity.status(401).build();
-            }
+			String email = jwtUtil.getEmailFromToken(refreshToken);
+			User user = userRepository.findByEmail(email);
 
-            // Email get from refresh token
-            String email =
-                    jwtUtil.getEmailFromToken(refreshToken);
+			if (user == null) {
+				return ResponseEntity.status(401).build();
+			}
 
-            // Find user
-            User user =
-                    userRepository.findByEmail(email);
+			// Do not reject refresh just because the presence
+			// scheduler marked this user offline.
+			String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
 
-            if (user == null) {
-                return ResponseEntity.status(401).build();
-            }
+			LoginResponse response = new LoginResponse(newAccessToken, refreshToken, user.getRole(), user.getId(),
+					user.getName());
 
-            // User must be online
-            if (!user.isOnline()) {
-                return ResponseEntity.status(401).build();
-            }
+			return ResponseEntity.ok(response);
 
-            // Generate new access token
-            String accessToken =
-                    jwtUtil.generateAccessToken(
-                            user.getEmail(),
-                            user.getRole()
-                    );
+		} catch (Exception e) {
+			System.out.println("REFRESH TOKEN ERROR: " + e.getMessage());
+			return ResponseEntity.status(401).build();
+		}
+	}
 
-            // Response
-            LoginResponse response =
-                    new LoginResponse(
-                            accessToken,
-                            refreshToken,
-                            user.getRole(),
-                            user.getId(),
-                            user.getName()
-                    );
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-
-            System.out.println(
-                    "REFRESH TOKEN ERROR: "
-                            + e.getMessage()
-            );
-
-            return ResponseEntity
-                    .status(401)
-                    .build();
-        }
-    }
 }

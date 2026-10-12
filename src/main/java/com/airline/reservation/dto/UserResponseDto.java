@@ -3,7 +3,7 @@ package com.airline.reservation.dto;
 import lombok.Data;
 
 @Data
-public class UserResponse {
+public class UserResponseDto {
 
 	   private Long id;
     private String email;

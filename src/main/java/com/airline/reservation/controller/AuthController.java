@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.airline.reservation.dto.LoginRequest;
 import com.airline.reservation.dto.LoginResponse;
 import com.airline.reservation.dto.ProfileResponse;
+import com.airline.reservation.dto.RefreshTokenRequest;
 import com.airline.reservation.entity.User;
 import com.airline.reservation.repository.UserRepository;
 import com.airline.reservation.service.AuthService;
@@ -40,6 +41,7 @@ public class AuthController {
             @RequestBody LoginRequest request) {
 
         return authService.login(request);
+        
     }
 
 
@@ -47,12 +49,15 @@ public class AuthController {
     // REFRESH TOKEN
     // =====================================================
 
-    @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(
-            @RequestBody String refreshToken) {
 
-        return authService.refreshToken(refreshToken);
-    }
+@PostMapping("/refresh")
+public ResponseEntity<?> refreshToken(
+        @RequestBody RefreshTokenRequest request) {
+
+    return authService.refreshToken(request.getRefreshToken());
+}
+
+
 
 
     // =====================================================

@@ -1,8 +1,10 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
-import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const API_BASE_URL = "http://localhost:8080";
 
 function SeatSelection() {
   const location = useLocation();
@@ -13,14 +15,10 @@ function SeatSelection() {
   // =====================================================
 
   const bookingData = location.state || {};
-
   const flight = bookingData.flight;
 
-  const flightId = Number(
-    bookingData.flightId ||
-    flight?.id ||
-    0
-  );
+  const flightId = Number(bookingData.flightId || flight?.id || 0);
+  const passengers = Math.max(1, Number(bookingData.passengers) || 1);
 
   const from =
     bookingData.from ||
@@ -36,60 +34,64 @@ function SeatSelection() {
     flight?.destinationAirport?.airportCode ||
     "";
 
-  const travelDate =
-    bookingData.travelDate || "";
+  const travelDate = bookingData.travelDate || "";
 
-  const passengers =
-    Number(bookingData.passengers) || 1;
+  // Each passenger must have their own ID.
+  const passengerDetails = Array.isArray(bookingData.passengerDetails)
+    ? bookingData.passengerDetails
+    : [];
 
-  const passengerId =
-    Number(bookingData.passengerId) || 0;
-
-  const passengerName =
-    bookingData.passengerName || "";
-
-  const passengerAge =
-    bookingData.passengerAge || "";
-
-  const passengerGender =
-    bookingData.passengerGender || "";
-
-  const passportNumber =
-    bookingData.passportNumber || "";
+  const allPassengersHaveIds =
+    passengerDetails.length === passengers &&
+    passengerDetails.every((passenger) => Number(passenger.passengerId) > 0);
 
   // =====================================================
-  // STATE
+  // SEAT STATE
   // =====================================================
 
   const [selectedSeats, setSelectedSeats] = useState([]);
-
   const [seatData, setSeatData] = useState([]);
-
   const [bookedSeats, setBookedSeats] = useState([]);
-
   const [loadingSeats, setLoadingSeats] = useState(true);
 
   // =====================================================
-  // 52 SEATS
+  // STYLES — ORIGINAL THEME PRESERVED
   // =====================================================
 
-  const seats = [
-    "1A", "1B", "1C", "1D",
-    "2A", "2B", "2C", "2D",
-    "3A", "3B", "3C", "3D",
-    "4A", "4B", "4C", "4D",
-    "5A", "5B", "5C", "5D",
-    "6A", "6B", "6C", "6D",
-    "7A", "7B", "7C", "7D",
-    "8A", "8B", "8C", "8D",
-    "9A", "9B", "9C", "9D",
-    "10A", "10B", "10C", "10D",
-    "11A", "11B", "11C", "11D",
-    "12A", "12B", "12C", "12D",
-    "13A", "13B", "13C", "13D"
-  ];
+  const primaryButtonStyle = {
+    padding: "13px 18px",
+    background: "#0866ff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "14px",
+  };
+
+  const secondaryButtonStyle = {
+    padding: "13px 18px",
+    background: "#e5e7eb",
+    color: "#111827",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "14px",
+  };
+
   // =====================================================
-  // GET SEAT PRICE FROM FLIGHT CLASS
+  // SEAT LAYOUT
+  // =====================================================
+
+  const seats = Array.from({ length: 52 }, (_, index) => {
+    const row = Math.floor(index / 4) + 1;
+    const column = ["A", "B", "C", "D"][index % 4];
+    return `${row}${column}`;
+  });
+
+  // =====================================================
+  // SEAT PRICE
   // =====================================================
 
   const getSeatPrice = (seatNumber) => {
@@ -99,19 +101,11 @@ function SeatSelection() {
         String(seatNumber).toUpperCase()
     );
 
-    console.log("Selected Seat:", seatNumber);
-    console.log("Seat Object:", seat);
-    console.log("Flight Object:", flight);
+    if (!seat || !flight) return 0;
 
-    if (!seat) {
-      return 0;
-    }
-
-    const seatClass = String(
-      seat.seatClass || ""
-    ).trim().toUpperCase();
-
-    console.log("Seat Class:", seatClass);
+    const seatClass = String(seat.seatClass || "")
+      .trim()
+      .toUpperCase();
 
     switch (seatClass) {
       case "ECONOMY":
@@ -127,27 +121,17 @@ function SeatSelection() {
         return Number(flight.firstClassPrice || 0);
 
       default:
-        console.log(
-          "Unknown seat class:",
-          seat.seatClass
-        );
         return 0;
     }
   };
 
-  // =====================================================
-  // TOTAL PRICE
-  // =====================================================
-
   const totalPrice = selectedSeats.reduce(
-    (total, seatNumber) => {
-      return total + getSeatPrice(seatNumber);
-    },
+    (total, seat) => total + getSeatPrice(seat),
     0
   );
 
   // =====================================================
-  // GET SEATS FROM DATABASE
+  // LOAD SEATS
   // =====================================================
 
   useEffect(() => {
@@ -160,164 +144,81 @@ function SeatSelection() {
       try {
         setLoadingSeats(true);
 
-        const token =
-          localStorage.getItem("token");
-
-        console.log(
-          "Fetching seats for Flight ID:",
-          flightId
-        );
+        const token = localStorage.getItem("token");
 
         const response = await fetch(
-          `http://localhost:8080/api/seats/flight/${flightId}`,
+          `${API_BASE_URL}/api/seats/flight/${flightId}`,
           {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              "Content-Type": "application/json",
+            },
           }
         );
 
         if (!response.ok) {
-          throw new Error(
-            `Seat API failed: ${response.status}`
-          );
+          throw new Error(`Seat API failed: ${response.status}`);
         }
 
         const data = await response.json();
+        const allSeats = Array.isArray(data) ? data : [];
 
-        console.log(
-          "Seats received from DB:",
-          data
+        setSeatData(allSeats);
+
+        setBookedSeats(
+          allSeats
+            .filter(
+              (seat) =>
+                String(seat.status || "").toUpperCase() === "BOOKED"
+            )
+            .map((seat) => String(seat.seatNumber).toUpperCase())
         );
-
-        // =================================================
-        // SAVE COMPLETE SEAT DATA
-        // =================================================
-
-        setSeatData(
-          Array.isArray(data) ? data : []
-        );
-
-        // =================================================
-        // ONLY BOOKED SEATS
-        // =================================================
-
-        const booked = Array.isArray(data)
-          ? data
-              .filter(
-                (seat) =>
-                  seat.status &&
-                  seat.status
-                    .toUpperCase() === "BOOKED"
-              )
-              .map(
-                (seat) => seat.seatNumber
-              )
-          : [];
-
-        console.log(
-          "BOOKED SEATS:",
-          booked
-        );
-
-        setBookedSeats(booked);
-
       } catch (error) {
-        console.error(
-          "Error fetching seats:",
-          error
-        );
-
+        console.error("Error loading seats:", error);
         setSeatData([]);
         setBookedSeats([]);
-
-        alert(
-          "Unable to load seat information."
-        );
-
+        alert("Unable to load seat information. Please try again.");
       } finally {
         setLoadingSeats(false);
       }
     };
 
     fetchSeats();
-
   }, [flightId]);
 
-  // =====================================================
-  // AVAILABLE SEATS COUNT
-  // =====================================================
-
-  const availableSeats =
-    seats.length - bookedSeats.length;
+  const availableSeats = Math.max(0, seats.length - bookedSeats.length);
 
   // =====================================================
-  // SEAT CLICK
+  // SELECT / DESELECT SEATS
   // =====================================================
 
   const handleSeatClick = (seat) => {
+    const normalizedSeat = String(seat).toUpperCase();
 
-    // ===================================================
-    // BOOKED SEAT
-    // ===================================================
+    if (bookedSeats.includes(normalizedSeat)) {
+      alert(`Seat ${normalizedSeat} is already booked.`);
+      return;
+    }
 
-    if (bookedSeats.includes(seat)) {
-      alert(
-        `Seat ${seat} is already booked.`
+    if (selectedSeats.includes(normalizedSeat)) {
+      setSelectedSeats((previous) =>
+        previous.filter((item) => item !== normalizedSeat)
       );
       return;
     }
 
-    // ===================================================
-    // DESELECT
-    // ===================================================
-
-    if (selectedSeats.includes(seat)) {
-      setSelectedSeats(
-        selectedSeats.filter(
-          (item) => item !== seat
-        )
-      );
+    if (selectedSeats.length >= passengers) {
+      alert(`You can select a maximum of ${passengers} seat(s).`);
       return;
     }
 
-    // ===================================================
-    // MAX SEAT CHECK
-    // ===================================================
-
-    if (
-      selectedSeats.length >= passengers
-    ) {
-      alert(
-        `You can select maximum ${passengers} seat(s).`
-      );
+    if (getSeatPrice(normalizedSeat) <= 0) {
+      alert(`Price is not available for seat ${normalizedSeat}.`);
       return;
     }
 
-    // ===================================================
-    // PRICE CHECK
-    // ===================================================
-
-    const seatPrice =
-      getSeatPrice(seat);
-
-    if (seatPrice <= 0) {
-      alert(
-        `Price is not available for seat ${seat}.`
-      );
-      return;
-    }
-
-    // ===================================================
-    // SELECT
-    // ===================================================
-
-    setSelectedSeats([
-      ...selectedSeats,
-      seat
-    ]);
+    setSelectedSeats((previous) => [...previous, normalizedSeat]);
   };
 
   // =====================================================
@@ -325,28 +226,14 @@ function SeatSelection() {
   // =====================================================
 
   const handleContinue = () => {
-
-    // ===================================================
-    // FLIGHT CHECK
-    // ===================================================
-
     if (!flight || !flightId) {
-      alert(
-        "Flight information is missing. Please select the flight again."
-      );
-
+      alert("Flight information is missing. Please select your flight again.");
       navigate("/");
       return;
     }
 
-    // ===================================================
-    // PASSENGER CHECK
-    // ===================================================
-
-    if (!passengerId) {
-      alert(
-        "Passenger information is missing. Please enter passenger details again."
-      );
+    if (!allPassengersHaveIds) {
+      alert("Passenger information is missing. Please enter all passenger details again.");
 
       navigate("/booking", {
         state: {
@@ -355,55 +242,47 @@ function SeatSelection() {
           from,
           to,
           travelDate,
-          passengers
-        }
+          passengers,
+        },
       });
 
       return;
     }
 
-    // ===================================================
-    // SEAT CHECK
-    // ===================================================
-
-    if (
-      selectedSeats.length !== passengers
-    ) {
-      alert(
-        `Please select ${passengers} seat(s).`
-      );
-
+    if (selectedSeats.length !== passengers) {
+      alert(`Please select exactly ${passengers} seat(s).`);
       return;
     }
 
-    // ===================================================
-    // PRICE CHECK
-    // ===================================================
-
     const invalidSeat = selectedSeats.find(
-      (seat) =>
-        getSeatPrice(seat) <= 0
+      (seat) => getSeatPrice(seat) <= 0
     );
 
     if (invalidSeat) {
-      alert(
-        `Price is not available for seat ${invalidSeat}.`
-      );
-
+      alert(`Price is not available for seat ${invalidSeat}.`);
       return;
     }
 
     if (totalPrice <= 0) {
-      alert(
-        "Total fare is not available."
-      );
-
+      alert("Total fare is not available.");
       return;
     }
 
-    // ===================================================
-    // GO PAYMENT
-    // ===================================================
+    // Assign seats in selection order:
+    // Passenger 1 -> selectedSeats[0]
+    // Passenger 2 -> selectedSeats[1], and so on.
+    const passengersWithSeats = passengerDetails.map(
+      (passenger, index) => ({
+        ...passenger,
+        passengerId: Number(passenger.passengerId),
+        name: String(passenger.name || "").trim(),
+        age: Number(passenger.age),
+        gender: passenger.gender,
+        passportNumber: passenger.passportNumber || "",
+        seatNumber: selectedSeats[index],
+        seatPrice: getSeatPrice(selectedSeats[index]),
+      })
+    );
 
     navigate("/payment", {
       state: {
@@ -413,36 +292,35 @@ function SeatSelection() {
         to,
         travelDate,
         passengers,
-        passengerId,
-        passengerName,
-        passengerAge,
-        passengerGender,
-        passportNumber,
+
+        // Backward compatibility for existing payment code.
+        passengerId: passengersWithSeats[0].passengerId,
+        passengerName: passengersWithSeats[0].name,
+        passengerAge: passengersWithSeats[0].age,
+        passengerGender: passengersWithSeats[0].gender,
+        passportNumber: passengersWithSeats[0].passportNumber,
+
+        // Important: individual passenger IDs and seats.
+        passengerDetails: passengersWithSeats,
         selectedSeats,
 
-        // Individual seat prices
-        seatPrices: selectedSeats.map(
-          (seat) => ({
-            seatNumber: seat,
-            price: getSeatPrice(seat)
-          })
-        ),
+        seatPrices: passengersWithSeats.map((passenger) => ({
+          passengerId: passenger.passengerId,
+          passengerName: passenger.name,
+          seatNumber: passenger.seatNumber,
+          price: passenger.seatPrice,
+        })),
 
-        // Total exact fare
-        totalPrice
-      }
+        totalPrice,
+      },
     });
   };
 
   // =====================================================
-  // MISSING INFORMATION
+  // MISSING BOOKING DATA
   // =====================================================
 
-  if (
-    !flight ||
-    !flightId ||
-    !passengerId
-  ) {
+  if (!flight || !flightId || !allPassengersHaveIds) {
     return (
       <div
         style={{
@@ -451,42 +329,44 @@ function SeatSelection() {
           justifyContent: "center",
           alignItems: "center",
           background: "#f5f7fa",
-          fontFamily: "Arial, sans-serif"
+          padding: "20px",
+          fontFamily: "Arial, sans-serif",
         }}
       >
         <div
           style={{
-            background: "white",
-            padding: "40px",
+            background: "#fff",
+            padding: "35px",
             borderRadius: "15px",
             textAlign: "center",
-            boxShadow:
-              "0 5px 20px rgba(0,0,0,0.10)"
+            boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
+            maxWidth: "450px",
+            width: "100%",
           }}
         >
-          <h2>
-            Booking Information Missing
-          </h2>
+          <h2>Booking Information Missing</h2>
 
           <p>
-            Please start the booking process again.
+            Please enter the details of all passengers before selecting seats.
           </p>
 
           <button
             type="button"
-            onClick={() => navigate("/")}
-            style={{
-              marginTop: "20px",
-              padding: "12px 25px",
-              background: "#0066ff",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
+            onClick={() =>
+              navigate("/booking", {
+                state: {
+                  flight,
+                  flightId,
+                  from,
+                  to,
+                  travelDate,
+                  passengers,
+                },
+              })
+            }
+            style={primaryButtonStyle}
           >
-            Back to Home
+            Enter Passenger Details
           </button>
         </div>
       </div>
@@ -494,626 +374,400 @@ function SeatSelection() {
   }
 
   // =====================================================
-  // UI
+  // MAIN UI — SEAT MAP AND SUMMARY ONLY
   // =====================================================
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #eef4ff, #f8fafc)",
-        padding: "40px 20px",
-        fontFamily: "Arial, sans-serif"
+        background: "linear-gradient(135deg, #eef4ff, #f8fafc)",
+        padding: "30px 16px",
+        fontFamily: "Arial, sans-serif",
       }}
     >
-      <div
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto"
-        }}
-      >
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <div
-          style={{
-            marginBottom: "25px"
-          }}
-        >
-          <h1>
+      <div style={{ maxWidth: "1150px", margin: "0 auto" }}>
+        <header style={{ marginBottom: "25px" }}>
+          <h1 style={{ marginBottom: "8px", color: "#172554" }}>
             Select Your Seats
           </h1>
 
-          <p style={{ color: "#666" }}>
-            Select{" "}
-            <strong>
-              {passengers}
-            </strong>{" "}
-            seat
-            {passengers > 1 ? "s" : ""}.
+          <p style={{ color: "#64748b" }}>
+            Choose {passengers} seat(s), one for each passenger, before payment.
           </p>
-        </div>
+        </header>
 
-        {/* =================================================
-            FLIGHT INFORMATION
-        ================================================= */}
+        {/* FLIGHT INFORMATION */}
 
-        <div
+        <section
           style={{
-            background: "white",
-            padding: "20px",
+            background: "#fff",
+            padding: "22px",
             borderRadius: "12px",
-            boxShadow:
-              "0 4px 15px rgba(0,0,0,0.07)",
-            marginBottom: "25px"
+            boxShadow: "0 4px 15px rgba(0,0,0,0.07)",
+            marginBottom: "25px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "20px",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(4, 1fr)",
-              gap: "20px"
-            }}
-          >
-            <div>
-              <small style={{ color: "#777" }}>
-                Airline
-              </small>
-
-              <strong
-                style={{
-                  display: "block",
-                  marginTop: "5px"
-                }}
-              >
-                {flight.airlineName ||
-                  flight.airline ||
-                  "Airline"}
-              </strong>
-            </div>
-
-            <div>
-              <small style={{ color: "#777" }}>
-                Flight
-              </small>
-
-              <strong
-                style={{
-                  display: "block",
-                  marginTop: "5px"
-                }}
-              >
-                {flight.flightNumber || "--"}
-              </strong>
-            </div>
-
-            <div>
-              <small style={{ color: "#777" }}>
-                Route
-              </small>
-
-              <strong
-                style={{
-                  display: "block",
-                  marginTop: "5px"
-                }}
-              >
-                {from} → {to}
-              </strong>
-            </div>
-
-            <div>
-              <small style={{ color: "#777" }}>
-                Travel Date
-              </small>
-
-              <strong
-                style={{
-                  display: "block",
-                  marginTop: "5px"
-                }}
-              >
-                {travelDate || "--"}
-              </strong>
-            </div>
+          <div>
+            <small style={{ color: "#64748b" }}>Airline</small>
+            <strong style={{ display: "block", marginTop: "5px" }}>
+              {flight.airlineName || flight.airline || "Airline"}
+            </strong>
           </div>
-        </div>
 
-        {/* =================================================
-            MAIN
-        ================================================= */}
+          <div>
+            <small style={{ color: "#64748b" }}>Flight Number</small>
+            <strong style={{ display: "block", marginTop: "5px" }}>
+              {flight.flightNumber || flight.flightNo || "--"}
+            </strong>
+          </div>
+
+          <div>
+            <small style={{ color: "#64748b" }}>Route</small>
+            <strong style={{ display: "block", marginTop: "5px" }}>
+              {from} → {to}
+            </strong>
+          </div>
+
+          <div>
+            <small style={{ color: "#64748b" }}>Travel Date</small>
+            <strong style={{ display: "block", marginTop: "5px" }}>
+              {travelDate || "--"}
+            </strong>
+          </div>
+
+          <div>
+            <small style={{ color: "#64748b" }}>Passengers</small>
+            <strong style={{ display: "block", marginTop: "5px" }}>
+              {passengers}
+            </strong>
+          </div>
+        </section>
 
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "1.3fr 0.7fr",
-            gap: "25px"
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+            gap: "25px",
+            alignItems: "start",
           }}
         >
+          {/* SEAT MAP */}
 
-          {/* =================================================
-              SEAT AREA
-          ================================================= */}
-
-          <div
+          <section
             style={{
-              background: "white",
-              padding: "30px",
+              background: "#fff",
+              padding: "25px",
               borderRadius: "15px",
-              boxShadow:
-                "0 5px 20px rgba(0,0,0,0.08)"
+              boxShadow: "0 5px 20px rgba(0,0,0,0.08)",
+              minWidth: 0,
             }}
           >
-            <h2>
-              ✈ Aircraft Seats
-            </h2>
-
-            {/* SEAT COUNTER */}
+            <h2 style={{ marginTop: 0 }}>✈ Aircraft Seats</h2>
 
             <div
               style={{
                 display: "flex",
-                gap: "25px",
-                marginTop: "15px",
-                marginBottom: "25px"
+                gap: "16px",
+                flexWrap: "wrap",
+                margin: "15px 0 25px",
+                color: "#475569",
               }}
             >
               <span>
-                Available:{" "}
-                <strong>
-                  {availableSeats}
-                </strong>
+                Available: <strong>{availableSeats}</strong>
               </span>
 
               <span>
-                Booked:{" "}
-                <strong>
-                  {bookedSeats.length}
-                </strong>
+                Booked: <strong>{bookedSeats.length}</strong>
               </span>
 
               <span>
-                Selected:{" "}
-                <strong>
-                  {selectedSeats.length}
-                </strong>
+                Selected: <strong>{selectedSeats.length}/{passengers}</strong>
               </span>
             </div>
 
-            {/* LOADING */}
-
             {loadingSeats ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "50px"
-                }}
-              >
-                <h3>
-                  Loading seats...
-                </h3>
+              <div style={{ textAlign: "center", padding: "40px" }}>
+                <h3>Loading seats...</h3>
               </div>
             ) : (
-              <div
-                style={{
-                  maxWidth: "500px",
-                  margin: "0 auto"
-                }}
-              >
-
-                {/* COCKPIT */}
-
+              <div style={{ maxWidth: "500px", margin: "0 auto" }}>
                 <div
                   style={{
                     textAlign: "center",
                     background: "#e5e7eb",
                     padding: "12px",
-                    borderRadius:
-                      "50% 50% 10px 10px",
+                    borderRadius: "50% 50% 10px 10px",
                     marginBottom: "20px",
-                    fontWeight: "bold"
+                    fontWeight: "bold",
                   }}
                 >
                   ✈ COCKPIT
                 </div>
 
-                {/* SEATS */}
-
                 <div
                   style={{
                     display: "grid",
                     gridTemplateColumns:
-                      "1fr 1fr 40px 1fr 1fr",
-                    gap: "10px"
+                      "minmax(0, 1fr) minmax(0, 1fr) 20px minmax(0, 1fr) minmax(0, 1fr)",
+                    gap: "8px",
                   }}
                 >
-                  {seats.map(
-                    (seat, index) => {
+                  {seats.map((seat, index) => {
+                    const selected = selectedSeats.includes(seat);
+                    const booked = bookedSeats.includes(seat);
+                    const seatPrice = getSeatPrice(seat);
+                    const position = index % 4;
 
-                      const selected =
-                        selectedSeats.includes(
-                          seat
-                        );
+                    const gridColumn =
+                      position === 0
+                        ? 1
+                        : position === 1
+                        ? 2
+                        : position === 2
+                        ? 4
+                        : 5;
 
-                      const booked =
-                        bookedSeats.includes(
-                          seat
-                        );
+                    const selectedIndex = selectedSeats.indexOf(seat);
 
-                      const seatPrice =
-                        getSeatPrice(seat);
+                    return (
+                      <button
+                        key={seat}
+                        type="button"
+                        disabled={booked || loadingSeats}
+                        onClick={() => handleSeatClick(seat)}
+                        title={
+                          booked
+                            ? `${seat} is booked`
+                            : selected
+                            ? `Assigned to Passenger ${selectedIndex + 1}`
+                            : `Select ${seat}`
+                        }
+                        style={{
+                          gridColumn,
+                          padding: "10px 3px",
+                          border: selected
+                            ? "2px solid #0047b3"
+                            : booked
+                            ? "1px solid #999"
+                            : "1px solid #cbd5e1",
+                          borderRadius: "7px",
+                          cursor:
+                            booked || loadingSeats ? "not-allowed" : "pointer",
+                          background: booked
+                            ? "#d1d5db"
+                            : selected
+                            ? "#0866ff"
+                            : "#e8f0ff",
+                          color: booked
+                            ? "#666"
+                            : selected
+                            ? "#fff"
+                            : "#333",
+                          fontWeight: "bold",
+                          opacity: booked ? 0.7 : 1,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div>{seat}</div>
 
-                      const position =
-                        index % 4;
-
-                      let gridColumn;
-
-                      if (position === 0) {
-                        gridColumn = 1;
-                      } else if (
-                        position === 1
-                      ) {
-                        gridColumn = 2;
-                      } else if (
-                        position === 2
-                      ) {
-                        gridColumn = 4;
-                      } else {
-                        gridColumn = 5;
-                      }
-
-                      return (
-                        <button
-                          key={seat}
-                          type="button"
-                          disabled={booked}
-                          onClick={() =>
-                            handleSeatClick(
-                              seat
-                            )
-                          }
+                        <div
                           style={{
-                            gridColumn,
-
-                            padding:
-                              "10px 5px",
-
-                            border:
-                              selected
-                                ? "2px solid #0047b3"
-                                : booked
-                                ? "1px solid #999"
-                                : "1px solid #cbd5e1",
-
-                            borderRadius:
-                              "7px",
-
-                            cursor:
-                              booked
-                                ? "not-allowed"
-                                : "pointer",
-
-                            background:
-                              booked
-                                ? "#d1d5db"
-                                : selected
-                                ? "#0066ff"
-                                : "#e8f0ff",
-
-                            color:
-                              booked
-                                ? "#666"
-                                : selected
-                                ? "white"
-                                : "#333",
-
-                            fontWeight:
-                              "bold",
-
-                            opacity:
-                              booked
-                                ? 0.7
-                                : 1
+                            fontSize: "10px",
+                            marginTop: "3px",
+                            fontWeight: "normal",
                           }}
                         >
-                          <div>
-                            {seat}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize:
-                                "11px",
-                              marginTop:
-                                "3px",
-                              fontWeight:
-                                "normal"
-                            }}
-                          >
-                            {seatPrice > 0
-                              ? `₹${seatPrice}`
-                              : "--"}
-                          </div>
-                        </button>
-                      );
-                    }
-                  )}
+                          {selected
+                            ? `P${selectedIndex + 1}`
+                            : seatPrice > 0
+                            ? `₹${seatPrice}`
+                            : "--"}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* LEGEND */}
-
             <div
               style={{
-                marginTop: "30px",
+                marginTop: "25px",
                 display: "flex",
-                justifyContent:
-                  "center",
-                gap: "25px",
-                flexWrap: "wrap"
+                justifyContent: "center",
+                gap: "16px",
+                flexWrap: "wrap",
               }}
             >
-              <span>
-                ⬜ Available
-              </span>
-
-              <span>
-                🟦 Selected
-              </span>
-
-              <span>
-                ⬛ Booked
-              </span>
+              <span>⬜ Available</span>
+              <span>🟦 Selected</span>
+              <span>⬛ Booked</span>
             </div>
-          </div>
+          </section>
 
-          {/* =================================================
-              BOOKING SUMMARY
-          ================================================= */}
+          {/* BOOKING SUMMARY */}
 
-          <div
+          <section
             style={{
-              background: "white",
-              padding: "30px",
+              background: "#fff",
+              padding: "25px",
               borderRadius: "15px",
-              boxShadow:
-                "0 5px 20px rgba(0,0,0,0.08)",
-              height: "fit-content"
+              boxShadow: "0 5px 20px rgba(0,0,0,0.08)",
+              minWidth: 0,
             }}
           >
-            <h2>
-              Booking Summary
-            </h2>
-
+            <h2 style={{ marginTop: 0 }}>Booking Summary</h2>
             <hr />
 
             <p>
-              <strong>
-                Passenger:
-              </strong>
-              <br />
-              {passengerName || "--"}
+              <strong>Total Passengers:</strong> {passengers}
+            </p>
+
+            {passengerDetails.map((passenger, index) => (
+              <div
+                key={passenger.passengerId}
+                style={{
+                  background: "#f0f7ff",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  marginBottom: "10px",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                <strong>Passenger {index + 1}</strong>
+
+                <p style={{ margin: "8px 0 5px" }}>
+                  Name: {passenger.name}
+                </p>
+
+               
+
+               
+
+              
+
+                <p style={{ margin: "0 0 5px" }}>
+                  Seat: {selectedSeats[index] || "--"}
+                </p>
+
+                <p style={{ margin: 0 }}>
+                  Fare:{" "}
+                  {selectedSeats[index]
+                    ? `₹${getSeatPrice(selectedSeats[index])}`
+                    : "--"}
+                </p>
+              </div>
+            ))}
+
+            <p>
+              <strong>Flight:</strong>{" "}
+              {flight.flightNumber || flight.flightNo || "--"}
             </p>
 
             <p>
-              <strong>
-                Passenger ID:
-              </strong>
-              <br />
-              {passengerId}
+              <strong>Route:</strong> {from} → {to}
             </p>
 
             <p>
-              <strong>
-                Flight:
-              </strong>
-              <br />
-              {flight.flightNumber || "--"}
-            </p>
-
-            <p>
-              <strong>
-                Route:
-              </strong>
-              <br />
-              {from} → {to}
-            </p>
-
-            <p>
-              <strong>
-                Date:
-              </strong>
-              <br />
-              {travelDate || "--"}
+              <strong>Travel Date:</strong> {travelDate || "--"}
             </p>
 
             <hr />
 
-            {/* =================================================
-                SELECTED SEATS
-            ================================================= */}
-
-            <h3>
-              Selected Seats
-            </h3>
+            <h3>Selected Seats</h3>
 
             {selectedSeats.length > 0 ? (
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: "8px"
+                  gap: "8px",
                 }}
               >
-                {selectedSeats.map(
-                  (seat) => (
-                    <div
-                      key={seat}
-                      style={{
-                        display: "flex",
-                        justifyContent:
-                          "space-between",
-                        alignItems:
-                          "center",
-                        background:
-                          "#f0f7ff",
-                        padding:
-                          "9px 12px",
-                        borderRadius:
-                          "6px"
-                      }}
-                    >
-                      <strong>
-                        Seat {seat}
-                      </strong>
+                {selectedSeats.map((seat, index) => (
+                  <div
+                    key={seat}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                      background: "#f0f7ff",
+                      padding: "9px 12px",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    <strong>
+                      Passenger {index + 1}: {seat}
+                    </strong>
 
-                      <span>
-                        ₹
-                        {getSeatPrice(
-                          seat
-                        )}
-                      </span>
-                    </div>
-                  )
-                )}
+                    <span>₹{getSeatPrice(seat)}</span>
+                  </div>
+                ))}
               </div>
             ) : (
-              <p
-                style={{
-                  color: "#777"
-                }}
-              >
-                No seat selected
-              </p>
+              <p style={{ color: "#777" }}>No seat selected</p>
             )}
-
-            <hr />
-
-            {/* =================================================
-                TOTAL FARE
-            ================================================= */}
 
             <div
               style={{
                 background: "#f0f7ff",
                 padding: "15px",
                 borderRadius: "10px",
-                marginTop: "20px"
+                marginTop: "20px",
               }}
             >
-              <p
-                style={{
-                  margin: 0,
-                  color: "#666"
-                }}
-              >
-                Total Fare
-              </p>
+              <p style={{ margin: 0, color: "#64748b" }}>Total Fare</p>
 
-              <h2
-                style={{
-                  margin: "5px 0 0",
-                  color: "#0066ff"
-                }}
-              >
-                {selectedSeats.length > 0
-                  ? `₹${totalPrice}`
+              <h2 style={{ margin: "5px 0 0", color: "#0866ff" }}>
+                {selectedSeats.length
+                  ? `₹${totalPrice.toLocaleString("en-IN")}`
                   : "Select seat(s)"}
               </h2>
-
-              {/* PRICE BREAKDOWN */}
-
-              {selectedSeats.length > 0 && (
-                <p
-                  style={{
-                    marginTop: "8px",
-                    marginBottom: 0,
-                    color: "#666",
-                    fontSize: "14px"
-                  }}
-                >
-                  {selectedSeats
-                    .map(
-                      (seat) =>
-                        `${seat}: ₹${getSeatPrice(
-                          seat
-                        )}`
-                    )
-                    .join(" + ")}
-                </p>
-              )}
             </div>
-
-            {/* =================================================
-                BUTTONS
-            ================================================= */}
 
             <div
               style={{
                 display: "flex",
                 gap: "10px",
-                marginTop: "25px"
+                marginTop: "25px",
               }}
             >
-
-              {/* BACK */}
-
               <button
                 type="button"
-                onClick={() =>
-                  navigate(-1)
-                }
-                style={{
-                  flex: 1,
-                  padding: "13px",
-                  background: "#e5e7eb",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
+                onClick={() => navigate(-1)}
+                style={{ ...secondaryButtonStyle, flex: 1 }}
               >
                 ← Back
               </button>
-
-              {/* PAYMENT */}
 
               <button
                 type="button"
                 onClick={handleContinue}
                 disabled={
-                  selectedSeats.length !==
-                  passengers
+                  loadingSeats || selectedSeats.length !== passengers
                 }
                 style={{
+                  ...primaryButtonStyle,
                   flex: 2,
-                  padding: "13px",
                   background:
-                    selectedSeats.length ===
-                    passengers
-                      ? "#0066ff"
+                    !loadingSeats && selectedSeats.length === passengers
+                      ? "#0866ff"
                       : "#9ca3af",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
                   cursor:
-                    selectedSeats.length ===
-                    passengers
+                    !loadingSeats && selectedSeats.length === passengers
                       ? "pointer"
                       : "not-allowed",
-                  fontWeight: "bold"
                 }}
               >
                 Continue to Payment →
               </button>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </div>

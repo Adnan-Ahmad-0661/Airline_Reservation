@@ -4,13 +4,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.airline.reservation.dto.BookingResponse;
-import com.airline.reservation.dto.UserResponse;
+import com.airline.reservation.dto.UserResponseDto;
 import com.airline.reservation.entity.Booking;
 import com.airline.reservation.entity.Flight;
 import com.airline.reservation.entity.Passenger;
@@ -24,26 +23,25 @@ import com.airline.reservation.repository.UserRepository;
 import com.airline.reservation.service.BookingService;
 
 import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
-    @Autowired
     private BookingRepository bookingRepository;
 
-    @Autowired
+    
     private SeatRepository seatRepository;
 
-    @Autowired
     private UserRepository userRepository;
 
-    @Autowired
     private FlightRepository flightRepository;
 
-    @Autowired
     private PassengerRepository passengerRepository;
 
+    
 
     // =====================================================
     // CREATE BOOKING
@@ -700,8 +698,8 @@ public class BookingServiceImpl implements BookingService {
 
         if (user != null) {
 
-            UserResponse userResponse =
-                    new UserResponse();
+            UserResponseDto userResponse =
+                    new UserResponseDto();
 
 
             userResponse.setId(

@@ -8,7 +8,7 @@ function CreateUser() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("USER");
+ 
 
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
@@ -80,24 +80,19 @@ function CreateUser() {
       alert("Password must be at least 6 characters");
       return;
     }
-
-    if (!role) {
-      alert("Please select role");
-      return;
-    }
+const userData = {
+  name: name.trim(),
+  email: email.trim(),
+  phone: phone.trim(),
+  password: password,
+};
+  
 
     try {
       setLoading(true);
 
       const formData = new FormData();
 
-      const userData = {
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        password: password,
-        role: role,
-      };
 
       formData.append(
         "user",
@@ -142,18 +137,16 @@ function CreateUser() {
               "Unable to create user"
         );
       }
+alert("User created successfully!");
 
-      alert("User created successfully!");
+setName("");
+setEmail("");
+setPhone("");
+setPassword("");
+setPhoto(null);
+setPhotoPreview("");
 
-      setName("");
-      setEmail("");
-      setPhone("");
-      setPassword("");
-      setRole("USER");
-      setPhoto(null);
-      setPhotoPreview("");
-
-      navigate("/login");
+navigate("/login");
 
     } catch (error) {
       console.error(
@@ -707,7 +700,7 @@ function CreateUser() {
 
             {/* ROLE */}
 
-            <div style={fieldContainer}>
+            {/* <div style={fieldContainer}>
               <label style={labelStyle}>
                 Account Type
               </label>
@@ -735,7 +728,7 @@ function CreateUser() {
                   </option>
                 </select>
               </div>
-            </div>
+            </div> */}
 
             {/* PHOTO */}
 

@@ -231,5 +231,13 @@ public class AdminController {
                 "User deleted successfully"
         );
     }
-
+	/*
+	 * @PatchMapping("/users/changeRole") public ResponseEntity<String>
+	 * changeRole(String role, Authentication authentication) { String name =
+	 * authentication.getName(); User user = userRepository.findByEmail(name);
+	 * user.setRole(role); userRepository.save(user); return
+	 * ResponseEntity.status(HttpStatus.OK).body("Role Updated "+role);
+	 * 
+	 * }
+	 */
 }

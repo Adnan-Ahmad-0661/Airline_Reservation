@@ -1,5 +1,6 @@
-import { useLocation, useNavigate } from "react-router-dom";
+
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:8080";
 
@@ -7,972 +8,894 @@ function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // =====================================================
-  // GET BOOKING DATA
-  // =====================================================
-
   const bookingData = location.state || {};
-
   const flight = bookingData.flight || null;
 
-  const flightId = Number(
-    bookingData.flightId ||
-      flight?.id ||
-      0
+  const flightId = Number(bookingData.flightId || flight?.id || 0);
+  const passengerId = Number(bookingData.passengerId || 0);
+
+  const from = bookingData.from || flight?.source || "";
+  const to = bookingData.to || flight?.destination || "";
+  const travelDate = bookingData.travelDate || "";
+  const passengers = Number(bookingData.passengers) || 1;
+
+  const selectedSeats = Array.isArray(bookingData.selectedSeats)
+    ? bookingData.selectedSeats
+    : [];
+
+  const passengerDetails = Array.isArray(bookingData.passengerDetails)
+    ? bookingData.passengerDetails
+    : [
+        {
+          name: bookingData.passengerName || "",
+        },
+      ];
+
+  const seatPrices = Array.isArray(bookingData.seatPrices)
+    ? bookingData.seatPrices
+    : [];
+
+  const getSeatPrice = (seat, index) => {
+    const item = seatPrices.find(
+      (entry) => String(entry.seatNumber) === String(seat)
+    );
+
+    if (item) return Number(item.price || 0);
+
+    const passenger = passengerDetails[index];
+
+    if (passenger?.seatPrice != null) {
+      return Number(passenger.seatPrice);
+    }
+
+    return Number(flight?.price || 0);
+  };
+
+  const calculatedTotal = selectedSeats.reduce(
+    (sum, seat, index) => sum + getSeatPrice(seat, index),
+    0
   );
 
-  const from =
-    bookingData.from ||
-    flight?.source ||
-    "";
+  const totalPrice = Number(
+    bookingData.totalPrice ?? calculatedTotal
+  );
 
-  const to =
-    bookingData.to ||
-    flight?.destination ||
-    "";
-
-  const travelDate =
-    bookingData.travelDate ||
-    "";
-
-  const passengers =
-    Number(bookingData.passengers) || 1;
-
-  const passengerId =
-    Number(bookingData.passengerId) || 0;
-
-  const passengerName =
-    bookingData.passengerName || "";
-
-  const passengerAge =
-    bookingData.passengerAge || "";
-
-  const passengerGender =
-    bookingData.passengerGender || "";
-
-  const passportNumber =
-    bookingData.passportNumber || "";
-
-  const selectedSeats =
-    Array.isArray(bookingData.selectedSeats)
-      ? bookingData.selectedSeats
-      : [];
-
-  // =====================================================
-  // PAYMENT STATE
-  // =====================================================
-
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
-
+  const [paymentMethod, setPaymentMethod] = useState("UPI");
+  const [upiApp, setUpiApp] = useState("Google Pay");
+  const [bank, setBank] = useState("SBI");
+  const [wallet, setWallet] = useState("Paytm");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // =====================================================
-  // PRICE
-  // =====================================================
+  const bookingIsValid =
+    Boolean(flight) &&
+    flightId > 0 &&
+    (
+      passengerDetails.length === passengers
+        ? passengerDetails.length > 0 &&
+          passengerDetails.every(
+            (passenger) => Number(passenger.passengerId) > 0
+          )
+        : passengerId > 0 && passengerDetails.length === 1
+    ) &&
+    selectedSeats.length === passengers &&
+    passengerDetails.length === passengers &&
+    totalPrice > 0;
 
-  const pricePerSeat =
-    Number(flight?.price || 0);
+  const paymentMethods = [
+    { value: "UPI", label: "UPI", icon: "📱" },
+    { value: "CARD", label: "Debit / Credit Card", icon: "💳" },
+    { value: "NET_BANKING", label: "Net Banking", icon: "🏦" },
+    { value: "WALLET", label: "Wallet", icon: "👛" },
+    
+  ];
 
-  const totalPrice =
-    pricePerSeat * selectedSeats.length;
+  const upiApps = [
+    { value: "Google Pay", icon: "🟦" },
+    { value: "PhonePe", icon: "🟣" },
+    { value: "Paytm", icon: "🔵" },
+  ];
 
-  // =====================================================
-  // DEBUG
-  // =====================================================
+  const formatCurrency = (amount) =>
+    Number(amount || 0).toLocaleString("en-IN");
 
-  console.log("==========================================");
-  console.log("PAYMENT PAGE");
-  console.log("==========================================");
+  async function readResponse(response) {
+    const text = await response.text();
 
-  console.log("Flight:", flight);
-  console.log("Flight ID:", flightId);
-  console.log("Passenger ID:", passengerId);
-  console.log("Passenger Name:", passengerName);
-  console.log("From:", from);
-  console.log("To:", to);
-  console.log("Travel Date:", travelDate);
-  console.log("Passengers:", passengers);
-  console.log("Selected Seats:", selectedSeats);
-  console.log("Price Per Seat:", pricePerSeat);
-  console.log("Total Price:", totalPrice);
-
-  console.log("==========================================");
-
-  // =====================================================
-  // BOOKING DATA CHECK
-  // =====================================================
-
-  if (
-    !flight ||
-    !flightId ||
-    !passengerId ||
-    selectedSeats.length === 0
-  ) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#f5f7fa",
-          fontFamily: "Arial, sans-serif",
-          padding: "20px"
-        }}
-      >
-        <div
-          style={{
-            background: "white",
-            padding: "40px",
-            borderRadius: "15px",
-            textAlign: "center",
-            boxShadow:
-              "0 5px 20px rgba(0,0,0,0.10)",
-            maxWidth: "500px",
-            width: "100%"
-          }}
-        >
-          <h2>
-            Booking Information Missing
-          </h2>
-
-          <p
-            style={{
-              color: "#666",
-              marginTop: "10px"
-            }}
-          >
-            Your booking session is incomplete.
-            Please select the flight and complete
-            passenger and seat selection again.
-          </p>
-
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            style={{
-              marginTop: "20px",
-              padding: "12px 25px",
-              background: "#0066ff",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontWeight: "bold"
-            }}
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // =====================================================
-  // PAYMENT / BOOKING
-  // =====================================================
-
-  const handlePayment = async () => {
-
-    // ===================================================
-    // CARD VALIDATION
-    // ===================================================
-
-    if (!cardName.trim()) {
-      alert("Please enter card holder name.");
-      return;
-    }
-
-    if (!cardNumber.trim()) {
-      alert("Please enter card number.");
-      return;
-    }
-
-    if (!expiry.trim()) {
-      alert("Please enter expiry date.");
-      return;
-    }
-
-    if (!cvv.trim()) {
-      alert("Please enter CVV.");
-      return;
-    }
-
-    // ===================================================
-    // GET JWT TOKEN
-    // ===================================================
-
-    const token =
-      localStorage.getItem("token");
-
-    console.log(
-      "JWT Token:",
-      token ? "FOUND" : "NOT FOUND"
-    );
-
-    if (!token) {
-
-      alert(
-        "Access denied. Please login again."
+    if (!response.ok) {
+      throw new Error(
+        `Request failed (${response.status}): ${
+          text || response.statusText
+        }`
       );
-
-      navigate("/login");
-
-      return;
     }
 
-    // ===================================================
-    // FLIGHT CHECK
-    // ===================================================
-
-    if (!flightId) {
-
-      alert(
-        "Flight ID missing."
-      );
-
-      return;
-    }
-
-    // ===================================================
-    // PASSENGER CHECK
-    // ===================================================
-
-    if (!passengerId) {
-
-      alert(
-        "Passenger ID missing."
-      );
-
-      return;
-    }
-
-    // ===================================================
-    // SEAT CHECK
-    // ===================================================
-
-    if (
-      selectedSeats.length === 0
-    ) {
-
-      alert(
-        "Please select at least one seat."
-      );
-
-      return;
-    }
-
-    // ===================================================
-    // START BOOKING
-    // ===================================================
+    if (!text) return {};
 
     try {
+      return JSON.parse(text);
+    } catch {
+      throw new Error("Invalid response received from server.");
+    }
+  }
 
-      setLoading(true);
+  const handlePayment = async (event) => {
+    event.preventDefault();
 
-      console.log(
-        "=========================================="
+    if (loading) return;
+
+    setErrorMessage("");
+
+    if (!bookingIsValid) {
+      setErrorMessage(
+        "Booking details are incomplete. Please return to seat selection and check your passengers, seats and fare."
       );
+      return;
+    }
 
-      console.log(
-        "STARTING BOOKING"
+    const incompletePassenger = passengerDetails.findIndex(
+      (passenger) =>
+        !String(passenger.name || "").trim() ||
+        !passenger.age ||
+        !passenger.gender
+    );
+
+    if (incompletePassenger !== -1) {
+      setErrorMessage(
+        `Passenger ${incompletePassenger + 1} details are incomplete.`
       );
+      return;
+    }
 
-      console.log(
-        "Flight ID:",
-        flightId
-      );
+    const token = localStorage.getItem("token");
 
-      console.log(
-        "Passenger ID:",
-        passengerId
-      );
+    if (!token) {
+      setErrorMessage("Please log in before continuing.");
+      navigate("/login");
+      return;
+    }
 
-      console.log(
-        "Selected Seats:",
-        selectedSeats
-      );
+    setLoading(true);
 
-      console.log(
-        "Token Present:",
-        !!token
-      );
-
-      console.log(
-        "=========================================="
-      );
-
+    try {
+      // STEP 1: Create one booking for each passenger and seat.
       const bookings = [];
 
-      // =================================================
-      // BOOK EACH SELECTED SEAT
-      // =================================================
+      for (let index = 0; index < selectedSeats.length; index++) {
+        const seat = selectedSeats[index];
+        const passenger = passengerDetails[index];
 
-      for (
-        const seat of selectedSeats
-      ) {
-
-        console.log(
-          "================================"
+        const currentPassengerId = Number(
+          passenger.passengerId || passengerId
         );
 
-        console.log(
-          "BOOKING SEAT:",
-          seat
-        );
-
-        // -----------------------------------------------
-        // URL
-        // -----------------------------------------------
-
-        const url =
-          `${API_URL}/api/bookings` +
-          `?flightId=${encodeURIComponent(
-            flightId
-          )}` +
-          `&passengerId=${encodeURIComponent(
-            passengerId
-          )}` +
-          `&seatNumber=${encodeURIComponent(
-            seat
-          )}`;
-
-        console.log(
-          "BOOKING URL:",
-          url
-        );
-
-        // -----------------------------------------------
-        // API REQUEST
-        // -----------------------------------------------
-
-        const response =
-          await fetch(
-            url,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-
-                "Authorization":
-                  `Bearer ${token}`
-              }
-            }
-          );
-
-        // -----------------------------------------------
-        // RESPONSE
-        // -----------------------------------------------
-
-        const responseText =
-          await response.text();
-
-        console.log(
-          "HTTP STATUS:",
-          response.status
-        );
-
-        console.log(
-          "RESPONSE:",
-          responseText
-        );
-
-        // -----------------------------------------------
-        // 401 / 403
-        // -----------------------------------------------
-
-        if (
-          response.status === 401 ||
-          response.status === 403
-        ) {
-
-          console.error(
-            "JWT / AUTHORIZATION ERROR"
-          );
-
+        if (!currentPassengerId) {
           throw new Error(
-            `Access denied (${response.status}). Please login again.`
+            `Passenger ID is missing for passenger ${index + 1}.`
           );
         }
 
-        // -----------------------------------------------
-        // OTHER ERROR
-        // -----------------------------------------------
+        const params = new URLSearchParams({
+          flightId: String(flightId),
+          passengerId: String(currentPassengerId),
+          seatNumber: String(seat),
+        });
 
-        if (!response.ok) {
+        const response = await fetch(
+          `${API_URL}/api/bookings?${params.toString()}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
+        const booking = await readResponse(response);
+
+        if (!booking?.id) {
           throw new Error(
-            responseText ||
-            `Booking failed for seat ${seat}`
+            `Booking ID was not returned for seat ${seat}.`
           );
         }
 
-        // -----------------------------------------------
-        // PARSE BOOKING
-        // -----------------------------------------------
-
-        let booking;
-
-        try {
-
-          booking =
-            JSON.parse(
-              responseText
-            );
-
-        } catch (error) {
-
-          console.error(
-            "JSON PARSE ERROR:",
-            error
-          );
-
-          throw new Error(
-            "Invalid response received from booking API.", { cause: error }
-          );
-        }
-
-        console.log(
-          "BOOKING CREATED:",
-          booking
-        );
-
-        bookings.push(
-          booking
-        );
+        bookings.push({
+          ...booking,
+          passengerDetails: passenger,
+          seatNumber: seat,
+          seatPrice: getSeatPrice(seat, index),
+        });
       }
 
-      // =================================================
-      // ALL BOOKINGS SUCCESSFUL
-      // =================================================
+      // STEP 2: Create payment for all bookings.
+      const paymentParams = new URLSearchParams();
 
-      console.log(
-        "=========================================="
-      );
+      bookings.forEach((booking) => {
+        paymentParams.append("bookingIds", String(booking.id));
+      });
 
-      console.log(
-        "ALL BOOKINGS CREATED SUCCESSFULLY"
-      );
+      paymentParams.set("paymentMethod", paymentMethod);
 
-      console.log(
-        "Bookings:",
-        bookings
-      );
+      if (paymentMethod === "UPI") {
+        paymentParams.set("upiApp", upiApp);
+      }
 
-      console.log(
-        "=========================================="
-      );
-
-      alert(
-        `${selectedSeats.length} seat(s) booked successfully!`
-      );
-
-      // =================================================
-      // GO TO CONFIRMATION
-      // =================================================
-
-      navigate(
-        "/confirmation",
+      const paymentResponse = await fetch(
+        `${API_URL}/api/payments?${paymentParams.toString()}`,
         {
-          state: {
-
-            bookings,
-
-            flight,
-
-            flightId,
-
-            from,
-
-            to,
-
-            travelDate,
-
-            passengers,
-
-            passengerId,
-
-            passengerName,
-
-            passengerAge,
-
-            passengerGender,
-
-            passportNumber,
-
-            selectedSeats,
-
-            pricePerSeat,
-
-            totalPrice
-          }
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
       );
 
+      const payment = await readResponse(paymentResponse);
+
+      if (!payment?.id) {
+        throw new Error("Payment API did not return a payment ID.");
+      }
+
+      // STEP 3: Navigate to confirmation.
+      navigate("/confirmation", {
+        state: {
+          bookings,
+          payment,
+          paymentId: payment.id,
+          paymentStatus: payment.paymentStatus || "PENDING",
+          totalPrice: Number(payment.amount ?? totalPrice),
+          flight,
+          flightId,
+          from,
+          to,
+          travelDate,
+          passengers,
+          passengerId,
+          passengerDetails,
+          selectedSeats,
+          seatPrices,
+          paymentMethod,
+          upiApp: paymentMethod === "UPI" ? upiApp : null,
+          bank: paymentMethod === "NET_BANKING" ? bank : null,
+          wallet: paymentMethod === "WALLET" ? wallet : null,
+        },
+      });
     } catch (error) {
-
-      console.error(
-        "Payment / Booking Error:",
-        error
+      console.error("Booking/payment error:", error);
+      setErrorMessage(
+        error.message || "Unable to process your booking."
       );
-
-      alert(
-        error.message ||
-        "Payment/Booking failed. Please try again."
-      );
-
     } finally {
-
       setLoading(false);
-
     }
   };
 
-  // =====================================================
-  // UI
-  // =====================================================
+  const handleCancel = () => {
+    if (loading) return;
+
+    if (window.confirm("Do you want to leave this booking process?")) {
+      navigate("/");
+    }
+  };
+
+  const methodStyle = (selected) => ({
+    ...styles.methodButton,
+    border: selected
+      ? "2px solid #0066ff"
+      : "1px solid #d5dce5",
+    background: selected ? "#eff6ff" : "#ffffff",
+  });
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #eef4ff, #f8fafc)",
-        padding: "40px 20px",
-        fontFamily: "Arial, sans-serif"
-      }}
-    >
+    <div style={styles.page}>
+      <main style={styles.container}>
+        <header style={styles.header}>
+          <div>
+            <h1 style={styles.pageTitle}>Complete Your Booking</h1>
+            <p style={styles.subtitle}>
+              Review your flight and passenger names before payment.
+            </p>
+          </div>
 
-      <div
-        style={{
-          maxWidth: "1050px",
-          margin: "auto"
-        }}
-      >
-
-        {/* =================================================
-            HEADER
-        ================================================= */}
-
-        <h1>
-          Payment
-        </h1>
-
-        <p
-          style={{
-            color: "#666"
-          }}
-        >
-          Complete your payment to confirm your booking.
-        </p>
-
-
-        {/* =================================================
-            MAIN
-        ================================================= */}
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "1fr 1fr",
-            gap: "25px",
-            marginTop: "30px"
-          }}
-        >
-
-          {/* =================================================
-              BOOKING SUMMARY
-          ================================================= */}
-
-          <div
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "15px",
-              boxShadow:
-                "0 5px 20px rgba(0,0,0,0.08)"
-            }}
+          <button
+            type="button"
+            style={styles.homeButton}
+            onClick={() => navigate("/")}
+            disabled={loading}
           >
+            🏠 Home
+          </button>
+        </header>
 
-            <h2>
-              Booking Summary
-            </h2>
+        {!bookingIsValid && (
+          <div role="alert" style={styles.error}>
+            Booking information is incomplete. Please check your flight,
+            passenger IDs and selected seats.
 
-            <hr />
-
-            <p>
-              <strong>
-                Passenger:
-              </strong>{" "}
-              {passengerName || "--"}
-            </p>
-
-            <p>
-              <strong>
-                Passenger ID:
-              </strong>{" "}
-              {passengerId}
-            </p>
-
-            <p>
-              <strong>
-                Airline:
-              </strong>{" "}
-              {flight.airlineName ||
-                flight.airline ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                Flight Number:
-              </strong>{" "}
-              {flight.flightNumber ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                Flight ID:
-              </strong>{" "}
-              {flightId}
-            </p>
-
-            <p>
-              <strong>
-                From:
-              </strong>{" "}
-              {from ||
-                flight.source ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                To:
-              </strong>{" "}
-              {to ||
-                flight.destination ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                Departure:
-              </strong>{" "}
-              {flight.departureTime ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                Arrival:
-              </strong>{" "}
-              {flight.arrivalTime ||
-                "--"}
-            </p>
-
-            <p>
-              <strong>
-                Travel Date:
-              </strong>{" "}
-              {travelDate || "--"}
-            </p>
-
-            <p>
-              <strong>
-                Passengers:
-              </strong>{" "}
-              {passengers}
-            </p>
-
-            <hr />
-
-            <p>
-              <strong>
-                Selected Seats:
-              </strong>
-            </p>
-
-            <div
-              style={{
-                background: "#eef4ff",
-                padding: "12px",
-                borderRadius: "8px",
-                marginBottom: "15px",
-                fontWeight: "bold"
-              }}
+            <button
+              type="button"
+              style={styles.backButton}
+              onClick={() => navigate(-1)}
             >
-              {selectedSeats.join(", ")}
+              Go Back
+            </button>
+          </div>
+        )}
+
+        <div style={styles.layout}>
+          {/* LEFT: FLIGHT AND PASSENGER NAMES */}
+
+          <section style={styles.card}>
+            <h2 style={styles.sectionTitle}>✈ Flight Details</h2>
+
+            <div style={styles.flightBanner}>
+              <div>
+                <span style={styles.smallLabel}>FROM</span>
+                <h2 style={styles.cityName}>{from || "--"}</h2>
+              </div>
+
+              <span style={styles.flightArrow}>✈ ━━━ ✈</span>
+
+              <div style={{ textAlign: "right" }}>
+                <span style={styles.smallLabel}>TO</span>
+                <h2 style={styles.cityName}>{to || "--"}</h2>
+              </div>
             </div>
 
-            <p>
-              <strong>
-                Number of Seats:
-              </strong>{" "}
-              {selectedSeats.length}
-            </p>
+            <Detail
+              label="Airline"
+              value={flight?.airlineName || flight?.airline || "--"}
+            />
 
-            <p>
-              <strong>
-                Price Per Seat:
-              </strong>{" "}
-              ₹{pricePerSeat}
-            </p>
+            <Detail
+              label="Flight Number"
+              value={flight?.flightNumber || "--"}
+            />
 
-            <hr />
+            <Detail label="Travel Date" value={travelDate || "--"} />
 
-            <div
-              style={{
-                background: "#f0f7ff",
-                padding: "18px",
-                borderRadius: "10px"
-              }}
-            >
+            <Detail label="Total Passengers" value={passengers} />
 
-              <p
-                style={{
-                  margin: 0,
-                  color: "#666"
-                }}
-              >
-                Total Amount
-              </p>
+            <hr style={styles.divider} />
 
-              <h2
-                style={{
-                  margin: "5px 0 0",
-                  color: "#0066ff"
-                }}
-              >
-                ₹{totalPrice}
+            <h2 style={styles.sectionTitle}>👤 Passenger Names</h2>
+
+            <div style={styles.passengerCard}>
+              {passengerDetails.map((passenger, index) => (
+                <div
+                  key={passenger.passengerId || index}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "13px 0",
+                    borderBottom:
+                      index !== passengerDetails.length - 1
+                        ? "1px solid #dbeafe"
+                        : "none",
+                  }}
+                >
+                  <strong style={styles.passengerNameLabel}>
+                    Passenger {index + 1}
+                  </strong>
+
+                  <span style={styles.passengerName}>
+                    {passenger.name || "Name not available"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={styles.totalBox}>
+              <span style={styles.totalLabel}>
+                Total Amount to Pay
+              </span>
+
+              <h2 style={styles.totalAmount}>
+                ₹{formatCurrency(totalPrice)}
               </h2>
-
             </div>
+          </section>
 
-          </div>
+          {/* RIGHT: PAYMENT OPTIONS */}
 
+          <section style={styles.card}>
+            <h2 style={styles.sectionTitle}>💳 Payment Details</h2>
 
-          {/* =================================================
-              PAYMENT FORM
-          ================================================= */}
+            <p style={styles.subtitle}>
+              Select your preferred payment method.
+            </p>
 
-          <div
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "15px",
-              boxShadow:
-                "0 5px 20px rgba(0,0,0,0.08)"
-            }}
-          >
+            <form onSubmit={handlePayment}>
+              <h3 style={styles.subHeading}>
+                Choose Payment Method
+              </h3>
 
-            <h2>
-              Payment Details
-            </h2>
+              <div style={styles.methodGrid}>
+                {paymentMethods.map((method) => (
+                  <button
+                    key={method.value}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => setPaymentMethod(method.value)}
+                    style={methodStyle(
+                      paymentMethod === method.value
+                    )}
+                  >
+                    <span style={styles.methodIcon}>
+                      {method.icon}
+                    </span>
 
-            <hr />
+                    <span>{method.label}</span>
 
-            {/* CARD HOLDER */}
+                    {paymentMethod === method.value && (
+                      <span style={styles.checkMark}>✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
 
-            <label>
-              <strong>
-                Card Holder Name
-              </strong>
-            </label>
+              {paymentMethod === "UPI" && (
+                <div style={styles.panel}>
+                  <h2 style={styles.panelTitle}>Choose UPI App</h2>
 
-            <input
-              type="text"
-              placeholder="Enter card holder name"
-              value={cardName}
-              onChange={(e) =>
-                setCardName(
-                  e.target.value
-                )
-              }
-              style={{
-                width: "100%",
-                padding: "13px",
-                margin:
-                  "8px 0 20px",
-                boxSizing:
-                  "border-box",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px"
-              }}
-            />
+                  <div style={styles.upiGrid}>
+                    {upiApps.map((app) => (
+                      <button
+                        key={app.value}
+                        type="button"
+                        disabled={loading}
+                        onClick={() => setUpiApp(app.value)}
+                        style={methodStyle(upiApp === app.value)}
+                      >
+                        <span style={styles.methodIcon}>
+                          {app.icon}
+                        </span>
 
+                        <span>{app.value}</span>
 
-            {/* CARD NUMBER */}
+                        {upiApp === app.value && (
+                          <span style={styles.checkMark}>
+                            Selected ✓
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <label>
-              <strong>
-                Card Number
-              </strong>
-            </label>
+              {paymentMethod === "CARD" && (
+                <div style={styles.panel}>
+                  <h2 style={styles.panelTitle}>
+                    Debit / Credit Card
+                  </h2>
 
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={19}
-              placeholder="1234 5678 9012 3456"
-              value={cardNumber}
-              onChange={(e) =>
-                setCardNumber(
-                  e.target.value
-                )
-              }
-              style={{
-                width: "100%",
-                padding: "13px",
-                margin:
-                  "8px 0 20px",
-                boxSizing:
-                  "border-box",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px"
-              }}
-            />
+                  <p style={styles.subtitle}>
+                    Card payments require an integrated payment gateway.
+                    Do not enter real card details in this demo.
+                  </p>
+                </div>
+              )}
 
+              {paymentMethod === "NET_BANKING" && (
+                <div style={styles.panel}>
+                  <label htmlFor="bank" style={styles.formLabel}>
+                    Select Bank
+                  </label>
 
-            {/* EXPIRY */}
+                  <select
+                    id="bank"
+                    style={styles.input}
+                    value={bank}
+                    onChange={(event) => setBank(event.target.value)}
+                    disabled={loading}
+                  >
+                    <option value="SBI">State Bank of India</option>
+                    <option value="HDFC">HDFC Bank</option>
+                    <option value="ICICI">ICICI Bank</option>
+                    <option value="AXIS">Axis Bank</option>
+                    <option value="KOTAK">Kotak Mahindra Bank</option>
+                  </select>
+                </div>
+              )}
 
-            <label>
-              <strong>
-                Expiry Date
-              </strong>
-            </label>
+              {paymentMethod === "WALLET" && (
+                <div style={styles.panel}>
+                  <label htmlFor="wallet" style={styles.formLabel}>
+                    Select Wallet
+                  </label>
 
-            <input
-              type="text"
-              placeholder="MM/YY"
-              maxLength={5}
-              value={expiry}
-              onChange={(e) =>
-                setExpiry(
-                  e.target.value
-                )
-              }
-              style={{
-                width: "100%",
-                padding: "13px",
-                margin:
-                  "8px 0 20px",
-                boxSizing:
-                  "border-box",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px"
-              }}
-            />
+                  <select
+                    id="wallet"
+                    style={styles.input}
+                    value={wallet}
+                    onChange={(event) => setWallet(event.target.value)}
+                    disabled={loading}
+                  >
+                    <option value="Paytm">Paytm</option>
+                    <option value="Amazon Pay">Amazon Pay</option>
+                    <option value="Mobikwik">MobiKwik</option>
+                  </select>
+                </div>
+              )}
 
+            
 
-            {/* CVV */}
+              <div style={styles.secureNote}>
+                🔒
+                <span>
+                  Keep your booking details safe. Real payments require
+                  server-side gateway verification.
+                </span>
+              </div>
 
-            <label>
-              <strong>
-                CVV
-              </strong>
-            </label>
+              {errorMessage && (
+                <div role="alert" style={styles.error}>
+                  {errorMessage}
+                </div>
+              )}
 
-            <input
-              type="password"
-              inputMode="numeric"
-              maxLength={4}
-              placeholder="123"
-              value={cvv}
-              onChange={(e) =>
-                setCvv(
-                  e.target.value
-                )
-              }
-              style={{
-                width: "100%",
-                padding: "13px",
-                margin:
-                  "8px 0 25px",
-                boxSizing:
-                  "border-box",
-                border:
-                  "1px solid #d1d5db",
-                borderRadius: "8px"
-              }}
-            />
+              <button
+                type="submit"
+                disabled={loading || !bookingIsValid}
+                style={{
+                  ...styles.primaryButton,
+                  opacity: loading || !bookingIsValid ? 0.6 : 1,
+                }}
+              >
+                {loading
+                  ? "Processing..."
+                  : `Continue — ₹${formatCurrency(totalPrice)}`}
+              </button>
 
+              <button
+                type="button"
+                style={styles.backButton}
+                onClick={() => navigate(-1)}
+                disabled={loading}
+              >
+                ← Back
+              </button>
 
-            {/* =================================================
-                PAY BUTTON
-            ================================================= */}
-
-            <button
-              type="button"
-              onClick={handlePayment}
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "14px",
-                background:
-                  loading
-                    ? "#9ca3af"
-                    : "#0066ff",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor:
-                  loading
-                    ? "not-allowed"
-                    : "pointer",
-                fontWeight: "bold",
-                fontSize: "16px"
-              }}
-            >
-              {loading
-                ? "Processing..."
-                : `Pay ₹${totalPrice}`}
-            </button>
-
-
-            {/* =================================================
-                BACK BUTTON
-            ================================================= */}
-
-            <button
-              type="button"
-              onClick={() =>
-                navigate(-1)
-              }
-              disabled={loading}
-              style={{
-                width: "100%",
-                padding: "12px",
-                marginTop: "10px",
-                background: "#e5e7eb",
-                color: "#333",
-                border: "none",
-                borderRadius: "8px",
-                cursor:
-                  loading
-                    ? "not-allowed"
-                    : "pointer"
-              }}
-            >
-              ← Back
-            </button>
-
-          </div>
-
+              <button
+                type="button"
+                style={styles.cancelButton}
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Cancel Booking
+              </button>
+            </form>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
+
+function Detail({ label, value }) {
+  return (
+    <div style={styles.detail}>
+      <strong>{label}:</strong>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f3f6fc",
+    padding: "30px 20px 50px",
+    boxSizing: "border-box",
+    fontFamily: "Arial, Helvetica, sans-serif",
+    color: "#111827",
+  },
+
+  container: {
+    maxWidth: 1450,
+    margin: "0 auto",
+  },
+
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+    flexWrap: "wrap",
+    marginBottom: 26,
+  },
+
+  pageTitle: {
+    fontSize: 30,
+    color: "#172554",
+    margin: "0 0 8px",
+    fontWeight: 750,
+  },
+
+  subtitle: {
+    color: "#64748b",
+    fontSize: 14,
+    lineHeight: 1.65,
+    margin: "5px 0 16px",
+  },
+
+  layout: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 28,
+    alignItems: "start",
+  },
+
+  card: {
+    background: "#ffffff",
+    padding: 30,
+    borderRadius: 16,
+    border: "1px solid #e5eaf3",
+    boxShadow: "0 8px 28px rgba(15, 23, 42, 0.08)",
+    minWidth: 0,
+    boxSizing: "border-box",
+  },
+
+  sectionTitle: {
+    fontSize: 24,
+    color: "#6b6578",
+    textAlign: "center",
+    margin: "0 0 24px",
+    fontWeight: 750,
+  },
+
+  flightBanner: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+    padding: "18px 14px",
+    borderRadius: 12,
+    background: "#f5f8ff",
+    border: "1px solid #e0eaff",
+    marginBottom: 20,
+  },
+
+  smallLabel: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: 700,
+    letterSpacing: 1,
+  },
+
+  cityName: {
+    color: "#1d4ed8",
+    fontSize: 20,
+    margin: "7px 0 0",
+    overflowWrap: "anywhere",
+  },
+
+  flightArrow: {
+    color: "#2563eb",
+    fontSize: 15,
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+
+  detail: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 14,
+    margin: "16px 0",
+    fontSize: 17,
+    lineHeight: 1.5,
+    color: "#6b6578",
+  },
+
+  passengerCard: {
+    background: "#f8fbff",
+    border: "1px solid #d9e8ff",
+    borderRadius: 12,
+    padding: "12px 18px",
+    margin: "18px 0",
+    overflowWrap: "anywhere",
+  },
+
+  passengerNameLabel: {
+    color: "#1d4ed8",
+    fontSize: 16,
+    flexShrink: 0,
+  },
+
+  passengerName: {
+    color: "#374151",
+    fontSize: 16,
+    fontWeight: 600,
+    textAlign: "right",
+    overflowWrap: "anywhere",
+  },
+
+  divider: {
+    border: 0,
+    borderTop: "1px solid #d1d5db",
+    margin: "24px 0",
+  },
+
+  totalBox: {
+    background: "#f0f7ff",
+    border: "1px solid #dbeafe",
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 22,
+  },
+
+  totalLabel: {
+    fontSize: 17,
+    color: "#64748b",
+    fontWeight: 700,
+  },
+
+  totalAmount: {
+    color: "#0066ff",
+    fontSize: 32,
+    margin: "8px 0 0",
+  },
+
+  subHeading: {
+    fontSize: 18,
+    margin: "0 0 16px",
+    color: "#252b3b",
+  },
+
+  methodGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 12,
+    margin: "14px 0 24px",
+  },
+
+  upiGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 10,
+    marginTop: 20,
+  },
+
+  methodButton: {
+    minHeight: 115,
+    padding: "18px 10px",
+    borderRadius: 12,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    color: "#111827",
+    fontSize: 15,
+    fontWeight: 700,
+    textAlign: "center",
+    overflowWrap: "anywhere",
+    cursor: "pointer",
+    transition: "background 0.2s ease, border 0.2s ease",
+  },
+
+  methodIcon: {
+    fontSize: 29,
+    lineHeight: 1.2,
+  },
+
+  checkMark: {
+    color: "#1d4ed8",
+    fontSize: 13,
+    fontWeight: 700,
+  },
+
+  panel: {
+    padding: 22,
+    border: "1px solid #e0e8f5",
+    borderRadius: 14,
+    marginBottom: 24,
+    background: "#ffffff",
+    minWidth: 0,
+  },
+
+  panelTitle: {
+    textAlign: "center",
+    color: "#6b6578",
+    fontSize: 23,
+    margin: "0 0 18px",
+  },
+
+  formLabel: {
+    display: "block",
+    fontSize: 15,
+    fontWeight: 700,
+    color: "#374151",
+    marginBottom: 8,
+  },
+
+  input: {
+    width: "100%",
+    padding: 14,
+    boxSizing: "border-box",
+    border: "1px solid #d1d5db",
+    borderRadius: 9,
+    fontSize: 15,
+    background: "#ffffff",
+  },
+
+  secureNote: {
+    display: "flex",
+    gap: 10,
+    alignItems: "flex-start",
+    color: "#64748b",
+    background: "#f8fafc",
+    padding: 13,
+    borderRadius: 9,
+    fontSize: 13,
+    lineHeight: 1.6,
+    margin: "10px 0 18px",
+  },
+
+  primaryButton: {
+    width: "100%",
+    padding: 17,
+    background: "#0066ff",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: 9,
+    fontWeight: 750,
+    fontSize: 17,
+    cursor: "pointer",
+    marginTop: 8,
+    boxShadow: "0 5px 12px rgba(0, 102, 255, 0.2)",
+  },
+
+  homeButton: {
+    padding: "12px 20px",
+    background: "#ffffff",
+    color: "#1d4ed8",
+    border: "1px solid #cbd5e1",
+    borderRadius: 9,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  backButton: {
+    width: "100%",
+    padding: 14,
+    background: "#e8edf5",
+    color: "#334155",
+    border: "none",
+    borderRadius: 9,
+    fontWeight: 700,
+    fontSize: 15,
+    cursor: "pointer",
+    marginTop: 12,
+  },
+
+  cancelButton: {
+    width: "100%",
+    padding: 13,
+    background: "#ffffff",
+    color: "#b91c1c",
+    border: "1px solid #fecaca",
+    borderRadius: 9,
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: "pointer",
+    marginTop: 12,
+  },
+
+  error: {
+    color: "#b91c1c",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: 9,
+    padding: 15,
+    margin: "16px 0",
+    lineHeight: 1.6,
+    overflowWrap: "anywhere",
+  },
+};
 
 export default Payment;
