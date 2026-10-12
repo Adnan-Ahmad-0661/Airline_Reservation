@@ -1,20 +1,49 @@
-
 import axios from "axios";
 
+const BASE_URL = "http://localhost:8080";
+
+// Main API instance
 const API = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: BASE_URL,
+  timeout: 20000,
 });
 
-// Separate instance so refresh request does not trigger
-// the same response interceptor.
+// Separate instance for refreshing tokens
+// This prevents the refresh request from triggering
+// the main response interceptor.
 const refreshAPI = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: BASE_URL,
+  timeout: 15000,
 });
 
 let refreshPromise = null;
+let logoutInProgress = false;
 
 // =====================================================
-// ATTACH ACCESS TOKEN
+// LOGOUT
+// =====================================================
+
+function logout() {
+  if (logoutInProgress) return;
+
+  logoutInProgress = true;
+
+  [
+    "token",
+    "accessToken",
+    "refreshToken",
+    "userId",
+    "userName",
+    "userEmail",
+    "userRole",
+    "user",
+  ].forEach((key) => localStorage.removeItem(key));
+
+  window.location.replace("/login");
+}
+
+// =====================================================
+// ATTACH ACCESS TOKEN TO EVERY MAIN API REQUEST
 // =====================================================
 
 API.interceptors.request.use(
@@ -39,32 +68,70 @@ async function refreshAccessToken() {
   const refreshToken = localStorage.getItem("refreshToken");
 
   if (!refreshToken) {
-    throw new Error("Refresh token not found");
+    const error = new Error("Refresh token not found");
+    error.authFailure = true;
+    throw error;
   }
 
-  const response = await refreshAPI.post(
-    "/api/auth/refresh",
-    { refreshToken }
-  );
+  console.log("Calling refresh API...");
 
-  const data = response.data;
+  try {
+    const response = await refreshAPI.post(
+      "/api/auth/refresh",
+      { refreshToken }
+    );
 
-  if (!data?.accessToken) {
-    throw new Error("New access token not received");
+    const data = response.data;
+
+    if (!data?.accessToken) {
+      throw new Error("Access token missing from refresh response");
+    }
+
+    // Save the new access token
+    localStorage.setItem("token", data.accessToken);
+
+    // Save the returned refresh token if provided
+    if (data.refreshToken) {
+      localStorage.setItem("refreshToken", data.refreshToken);
+    }
+
+    // Update user information if returned
+    if (data.userId != null) {
+      localStorage.setItem("userId", String(data.userId));
+    }
+
+    if (data.name) {
+      localStorage.setItem("userName", data.name);
+    }
+
+    if (data.role) {
+      localStorage.setItem("userRole", data.role);
+    }
+
+    console.log("Access token refreshed successfully");
+
+    return data.accessToken;
+  } catch (error) {
+    const status = error.response?.status;
+
+    console.error(
+      "Refresh API failed:",
+      status || error.message,
+      error.response?.data || ""
+    );
+
+    // Only clear the session when the server explicitly
+    // rejects the refresh token.
+    if (status === 401 || status === 403) {
+      error.authFailure = true;
+    }
+
+    throw error;
   }
-
-  localStorage.setItem("token", data.accessToken);
-
-  // Your backend currently returns the same refresh token.
-  if (data.refreshToken) {
-    localStorage.setItem("refreshToken", data.refreshToken);
-  }
-
-  return data.accessToken;
 }
 
 // =====================================================
-// HANDLE UNAUTHORIZED RESPONSE
+// HANDLE EXPIRED ACCESS TOKEN
 // =====================================================
 
 API.interceptors.response.use(
@@ -72,21 +139,31 @@ API.interceptors.response.use(
 
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+
+    if (!originalRequest || status !== 401) {
+      return Promise.reject(error);
+    }
+
+    // Do not refresh login or refresh requests themselves
+    const url = originalRequest.url || "";
 
     if (
-      error.response?.status !== 401 ||
-      !originalRequest ||
-      originalRequest._retry ||
-      originalRequest.url?.includes("/api/auth/login") ||
-      originalRequest.url?.includes("/api/auth/refresh")
+      url.includes("/api/auth/login") ||
+      url.includes("/api/auth/refresh")
     ) {
+      return Promise.reject(error);
+    }
+
+    // Do not retry the same request more than once
+    if (originalRequest._retry) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
     try {
-      // Share one refresh request if multiple APIs return 401.
+      // Reuse the same refresh request for concurrent 401s
       if (!refreshPromise) {
         refreshPromise = refreshAccessToken().finally(() => {
           refreshPromise = null;
@@ -95,27 +172,23 @@ API.interceptors.response.use(
 
       const newAccessToken = await refreshPromise;
 
-      originalRequest.headers =
-        originalRequest.headers || {};
-
+      // Retry original request with the new access token
+      originalRequest.headers = originalRequest.headers || {};
       originalRequest.headers.Authorization =
         `Bearer ${newAccessToken}`;
 
-      // Retry the original request once.
       return API(originalRequest);
-
     } catch (refreshError) {
-      [
-        "token",
-        "refreshToken",
-        "userId",
-        "userName",
-        "userEmail",
-        "userRole",
-        "user",
-      ].forEach((key) => localStorage.removeItem(key));
+      console.error(
+        "Token refresh failed:",
+        refreshError.response?.status || refreshError.message
+      );
 
-      window.location.href = "/login";
+      // Do not log out on network/server errors.
+      // Log out only if the refresh token is rejected.
+      if (refreshError.authFailure) {
+        logout();
+      }
 
       return Promise.reject(refreshError);
     }
@@ -123,7 +196,7 @@ API.interceptors.response.use(
 );
 
 // =====================================================
-// ROUTE STOPS
+// ROUTE STOPS API
 // =====================================================
 
 export const getRouteStops = async (routeId) => {

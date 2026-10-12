@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import API from "../services/api";
 const API_URL = "http://localhost:8080";
 
 function AdminDashboard() {
@@ -61,39 +61,69 @@ function AdminDashboard() {
         // ==============================
         // USERS
         // ==============================
+try {
+  const usersResponse = await API.get(
+    "/api/admin/users-status"
+  );
 
-        const usersResponse = await fetch(
-          `${API_URL}/api/admin/users-status`,
-          {
-            method: "GET",
-            headers
-          }
-        );
+  const usersData = usersResponse.data;
 
-        if (!usersResponse.ok) {
+  setUsers(
+    Array.isArray(usersData) ? usersData : []
+  );
+} catch (error) {
+  console.error(
+    "Users Status API Error:",
+    error.response?.status,
+    error.response?.data || error.message
+  );
 
-          if (
-            usersResponse.status === 401 ||
-            usersResponse.status === 403
-          ) {
-            localStorage.removeItem("token");
-            navigate("/login");
-            return;
-          }
+  if (
+    error.response?.status === 401 ||
+    error.response?.status === 403
+  ) {
+    // Do not manually remove tokens here.
+    // The shared Axios interceptor should handle refresh.
+    console.error(
+      "Authentication failed. Check the refresh API response."
+    );
+    return;
+  }
 
-          throw new Error(
-            `Users API failed: ${usersResponse.status}`
-          );
-        }
+  throw error;
+}
+        // const usersResponse = await fetch(
+        //   `${API_URL}/api/admin/users-status`,
+        //   {
+        //     method: "GET",
+        //     headers
+        //   }
+        // );
 
-        const usersData =
-          await usersResponse.json();
+        // if (!usersResponse.ok) {
 
-        setUsers(
-          Array.isArray(usersData)
-            ? usersData
-            : []
-        );
+        //   if (
+        //     usersResponse.status === 401 ||
+        //     usersResponse.status === 403
+        //   ) {
+        //     localStorage.removeItem("token");
+        //     navigate("/login");
+        //     return;
+        //   }
+
+        //   throw new Error(
+        //     `Users API failed: ${usersResponse.status}`
+        //   );
+        // }
+
+        // const usersData =
+        //   await usersResponse.json();
+
+        // setUsers(
+        //   Array.isArray(usersData)
+        //     ? usersData
+        //     : []
+        // );
 
 
         // ==============================

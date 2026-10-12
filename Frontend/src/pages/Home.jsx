@@ -87,77 +87,147 @@ function Home() {
   // =====================================================
 
  
-  const requireLogin = async (action) => {
-    const token = localStorage.getItem("token");
+  // const requireLogin = async (action) => {
+  //   const token = localStorage.getItem("token");
 
-    // Token hi nahi hai
-    if (!token) {
+  //   // Token hi nahi hai
+  //   if (!token) {
+  //     setIsLoggedIn(false);
+  //     setUserRole("");
+  //     navigate("/login");
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await fetch(
+  //       "http://localhost:8080/api/auth/profile",
+  //       {
+  //         method: "GET",
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+
+  //     // Token invalid/expired
+  //     if (response.status === 401 || response.status === 403) {
+  //       localStorage.removeItem("token");
+  //       localStorage.removeItem("userRole");
+
+  //       setIsLoggedIn(false);
+  //       setUserRole("");
+
+  //       navigate("/login");
+  //       return;
+  //     }
+
+  //     const user = await response.json();
+
+  //     // Backend ke according user offline hai
+  //     if (!user.online) {
+  //       localStorage.removeItem("token");
+  //       localStorage.removeItem("userRole");
+
+  //       setIsLoggedIn(false);
+  //       setUserRole("");
+
+  //       alert("Your session has expired. Please login again.");
+  //       navigate("/login");
+  //       return;
+  //     }
+
+  //     // User actually online hai
+  //     setIsLoggedIn(true);
+  //     setUserRole(user.role);
+
+  //     if (action) {
+  //       action();
+  //     }
+
+  //   } catch (error) {
+  //     console.error("Login verification failed:", error);
+
+  //     localStorage.removeItem("token");
+  //     localStorage.removeItem("userRole");
+
+  //     setIsLoggedIn(false);
+  //     setUserRole("");
+
+  //     navigate("/login");
+  //   }
+  // };
+ 
+  const requireLogin = async (action) => {
+  try {
+    // Axios interceptor automatically handles expired access tokens
+    const response = await API.get("/api/auth/profile");
+
+    const user = response.data;
+
+    // Check whether backend reports the user as offline
+    if (user?.online === false) {
+      alert("Your session has expired. Please login again.");
+
+      [
+        "token",
+        "accessToken",
+        "refreshToken",
+        "userId",
+        "userName",
+        "userEmail",
+        "userRole",
+        "user",
+      ].forEach((key) => localStorage.removeItem(key));
+
       setIsLoggedIn(false);
       setUserRole("");
       navigate("/login");
       return;
     }
 
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/auth/profile",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    // Update login state
+    setIsLoggedIn(true);
 
-      // Token invalid/expired
-      if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userRole");
-
-        setIsLoggedIn(false);
-        setUserRole("");
-
-        navigate("/login");
-        return;
-      }
-
-      const user = await response.json();
-
-      // Backend ke according user offline hai
-      if (!user.online) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userRole");
-
-        setIsLoggedIn(false);
-        setUserRole("");
-
-        alert("Your session has expired. Please login again.");
-        navigate("/login");
-        return;
-      }
-
-      // User actually online hai
-      setIsLoggedIn(true);
+    if (user?.role) {
       setUserRole(user.role);
+      localStorage.setItem("userRole", user.role);
+    }
 
-      if (action) {
-        action();
-      }
+    // Run the requested action after successful verification
+    if (typeof action === "function") {
+      action();
+    }
+  } catch (error) {
+    console.error(
+      "Login verification failed:",
+      error.response?.status,
+      error.response?.data || error.message
+    );
 
-    } catch (error) {
-      console.error("Login verification failed:", error);
-
-      localStorage.removeItem("token");
-      localStorage.removeItem("userRole");
+    // Do not delete tokens for network/server errors.
+    // If refresh fails with 401/403, handle the session here.
+    if (
+      error.response?.status === 401 ||
+      error.response?.status === 403
+    ) {
+      [
+        "token",
+        "accessToken",
+        "refreshToken",
+        "userId",
+        "userName",
+        "userEmail",
+        "userRole",
+        "user",
+      ].forEach((key) => localStorage.removeItem(key));
 
       setIsLoggedIn(false);
       setUserRole("");
-
       navigate("/login");
     }
-  };
- 
+  }
+};
 
   // =====================================================
   // EASY BOOKING
