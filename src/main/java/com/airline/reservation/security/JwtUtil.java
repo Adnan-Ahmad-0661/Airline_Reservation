@@ -22,9 +22,7 @@ public class JwtUtil {
 	private final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 24 * 7;
 
 
-    // =========================
     // ACCESS TOKEN
-    // =========================
 	public String generateAccessToken(String email, String role) {
 
 		return Jwts.builder().setSubject(email).claim("role", role).claim("type", "ACCESS").setIssuedAt(new Date())
@@ -34,9 +32,7 @@ public class JwtUtil {
 	}
 
 
-    // =========================
     // REFRESH TOKEN
-    // =========================
 	public String generateRefreshToken(String email) {
 
 		return Jwts.builder().setSubject(email).claim("type", "REFRESH").setIssuedAt(new Date())
@@ -46,9 +42,7 @@ public class JwtUtil {
 	}
 
 
-    // =========================
     // GET CLAIMS
-    // =========================
     public Claims getClaims(String token) {
 
         return Jwts.parserBuilder()

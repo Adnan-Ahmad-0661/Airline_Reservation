@@ -117,11 +117,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (!jwtUtil.validateToken(token)) {
 
-            System.out.println(
-                    "JWT TOKEN INVALID"
+            System.out.println("JWT TOKEN INVALID");
+
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                "{\"message\":\"Access token expired or invalid\"}"
             );
 
-            filterChain.doFilter(request, response);
             return;
         }
 
@@ -142,12 +147,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         );
 
         if (!"ACCESS".equals(tokenType)) {
+            System.out.println("INVALID TOKEN TYPE");
 
-            System.out.println(
-                    "INVALID TOKEN TYPE"
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write(
+                "{\"message\":\"Invalid access token type\"}"
             );
-
-            filterChain.doFilter(request, response);
             return;
         }
 

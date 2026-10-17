@@ -18,7 +18,7 @@ public class AirlineRunner implements CommandLineRunner {
 		private PasswordEncoder passwordEncoder;
 	@Override
 	public void run(String... args) throws Exception {
-		// TODO Auto-generated method stub
+
 		if(!userRepository.existsByEmail("adnanahamd8533@gmail.com"))
 		{
 			User user = new User();

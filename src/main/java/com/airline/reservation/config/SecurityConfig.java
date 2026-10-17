@@ -24,25 +24,19 @@ public class SecurityConfig {
 	@Autowired
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-	// =====================================================
 	// PASSWORD ENCODER
-	// =====================================================
 
 	@Bean
-	public PasswordEncoder passwordEncoder() {
+	PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-	// =====================================================
-	// CORS CONFIGURATION
-	// =====================================================
-
 	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
+	CorsConfigurationSource corsConfigurationSource() {
 
 		CorsConfiguration configuration = new CorsConfiguration();
 
-		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:5174"));
+		configuration.setAllowedOrigins(Arrays.asList("https://airline-front-end.vercel.app", "http://localhost:5173"));
 
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
@@ -57,160 +51,63 @@ public class SecurityConfig {
 		return source;
 	}
 
-	// =====================================================
 	// SECURITY FILTER CHAIN
-	// =====================================================
 
-	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-		http
+@Bean
+SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-				// =================================================
-				// CORS
-				// =================================================
+    http
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .csrf(csrf -> csrf.disable())
 
-				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        // H2 Console permission
+        .headers(headers ->
+            headers.frameOptions(frame -> frame.disable())
+        )
 
-				// =================================================
-				// CSRF
-				// =================================================
+        .sessionManagement(session ->
+            session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-				.csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
 
-				// =================================================
-				// SESSION
-				// =================================================
+            // H2 Console
+            .requestMatchers("/h2-console/**").permitAll()
 
-				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
-				// =================================================
-				// AUTHORIZATION
-				// =================================================
+            .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
 
-				.authorizeHttpRequests(auth -> auth
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-						// =================================================
-						// SWAGGER
-						// =================================================
+            .requestMatchers(HttpMethod.GET, "/api/flights/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/airports/**").permitAll()
 
-						.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/auth/profile").authenticated()
+            .requestMatchers(HttpMethod.POST, "/api/auth/offline").authenticated()
 
-						// =================================================
-						// LOGIN
-						// =================================================
+            .requestMatchers(HttpMethod.POST, "/api/flights/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/flights/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/flights/**").hasRole("ADMIN")
+            .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-						.requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/bookings").hasAnyRole("USER", "ADMIN")
+            .requestMatchers(HttpMethod.GET, "/api/bookings/**").hasAnyRole("USER", "ADMIN")
+            .requestMatchers(HttpMethod.PUT, "/api/bookings/cancel/**").hasAnyRole("USER", "ADMIN")
+            .requestMatchers("/api/passengers/**").hasAnyRole("USER", "ADMIN")
 
-						// REFRESH TOKEN
-						.requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
-						// REGISTER
-						.requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+            .requestMatchers("/api/users/**").authenticated()
+            .requestMatchers("/api/test").authenticated()
 
-						// USER APIs
-						.requestMatchers("/api/users/**").authenticated()
-						// =================================================
-						// CORS PREFLIGHT
-						// =================================================
+            .anyRequest().authenticated()
+        )
 
-						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .addFilterBefore(jwtAuthenticationFilter,
+            UsernamePasswordAuthenticationFilter.class);
 
-						// =================================================
-						// GET FLIGHTS
-						// =================================================
+    return http.build();
+}
 
-						.requestMatchers(HttpMethod.GET, "/api/flights/**").permitAll()
-
-						// =================================================
-						// GET AIRPORTS
-						// =================================================
-
-						.requestMatchers(HttpMethod.GET, "/api/airports/**").permitAll()
-
-						// =================================================
-						// PROFILE
-						// =================================================
-
-						.requestMatchers(HttpMethod.GET, "/api/auth/profile").authenticated()
-
-						// =================================================
-						// OFFLINE / LOGOUT
-						// =================================================
-
-						.requestMatchers(HttpMethod.POST, "/api/auth/offline").authenticated()
-
-						// =================================================
-						// ADD FLIGHT - ADMIN
-						// =================================================
-
-						.requestMatchers(HttpMethod.POST, "/api/flights/**").hasRole("ADMIN")
-
-						// =================================================
-						// UPDATE FLIGHT - ADMIN
-						// =================================================
-
-						.requestMatchers(HttpMethod.PUT, "/api/flights/**").hasRole("ADMIN")
-
-						// =================================================
-						// DELETE FLIGHT - ADMIN
-						// =================================================
-
-						.requestMatchers(HttpMethod.DELETE, "/api/flights/**").hasRole("ADMIN")
-
-						// =================================================
-						// ADMIN APIs
-						// =================================================
-
-						.requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-						// =================================================
-						// CREATE BOOKING
-						// =================================================
-
-						.requestMatchers(HttpMethod.POST, "/api/bookings").hasAnyRole("USER", "ADMIN")
-
-						// =================================================
-						// GET BOOKINGS
-						// =================================================
-
-						.requestMatchers(HttpMethod.GET, "/api/bookings/**").hasAnyRole("USER", "ADMIN")
-
-						// =================================================
-						// CANCEL BOOKING
-						// =================================================
-
-						.requestMatchers(HttpMethod.PUT, "/api/bookings/cancel/**").hasAnyRole("USER", "ADMIN")
-
-						// =================================================
-						// PASSENGER APIs
-						// =================================================
-
-						.requestMatchers("/api/passengers/**").hasAnyRole("USER", "ADMIN")
-
-						// =================================================
-						// USER APIs
-						// =================================================
-
-						.requestMatchers("/api/users/**").authenticated()
-
-						// =================================================
-						// TEST API
-						// =================================================
-
-						.requestMatchers("/api/test").authenticated()
-
-						// =================================================
-						// EVERYTHING ELSE
-						// =================================================
-
-						.anyRequest().authenticated())
-
-				// =====================================================
-				// JWT FILTER
-				// =====================================================
-
-				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-		return http.build();
-	}
 }

@@ -20,22 +20,16 @@ public class UserController {
 	@Autowired
 	private UserService userService;
 
-	// =====================================================
 	// ADD USER + PROFILE PHOTO
-	// =====================================================
-
 	@PostMapping(consumes = "multipart/form-data")
-	public UserResponseDto createUser(
-			@RequestPart("user") RegisterRequestDto dto,
+	public UserResponseDto createUser(@RequestPart("user") RegisterRequestDto dto,
 
 			@RequestPart(value = "photo", required = false) MultipartFile photo) {
 
 		return userService.addUser(dto, photo);
 	}
 
-	// =====================================================
 	// GET ALL USERS
-	// =====================================================
 
 	@GetMapping
 	public List<User> getAllUsers() {
@@ -43,9 +37,7 @@ public class UserController {
 		return userService.getAllUsers();
 	}
 
-	// =====================================================
 	// GET USER BY ID
-	// =====================================================
 
 	@GetMapping("/{id}")
 	public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
@@ -59,9 +51,7 @@ public class UserController {
 		return ResponseEntity.ok(user);
 	}
 
-	// =====================================================
 	// UPDATE USER
-	// =====================================================
 
 	@PutMapping("/{id}")
 	public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
@@ -75,9 +65,7 @@ public class UserController {
 		return ResponseEntity.ok(updatedUser);
 	}
 
-	// =====================================================
 	// CHANGE PROFILE PHOTO
-	// =====================================================
 
 	@PutMapping(value = "/{id}/photo", consumes = "multipart/form-data")
 	public ResponseEntity<UserResponseDto> updateProfilePhoto(
@@ -89,9 +77,7 @@ public class UserController {
 		return ResponseEntity.ok(userService.updateProfilePhoto(id, photo));
 	}
 
-	// =====================================================
 	// DELETE USER
-	// =====================================================
 
 	@DeleteMapping("/{id}")
 	public ResponseEntity<String> deleteUser(@PathVariable Long id) {

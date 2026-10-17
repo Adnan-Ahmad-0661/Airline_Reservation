@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
 
         User user =
                 userRepository.findById(id)
-                        .orElse(null);
+                .orElseThrow(() ->  new RuntimeException("USER ID NOT FOUND "));
 
         if (user == null) {
             return null;
@@ -101,7 +101,7 @@ public class UserServiceImpl implements UserService {
 
         User existingUser =
                 userRepository.findById(id)
-                        .orElse(null);
+               .orElseThrow(() ->  new RuntimeException("USER ID NOT FOUND "));
 
         if (existingUser == null) {
             return null;

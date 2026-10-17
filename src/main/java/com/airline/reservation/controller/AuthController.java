@@ -32,10 +32,7 @@ public class AuthController {
     private UserRepository userRepository;
 
 
-    // =====================================================
     // LOGIN
-    // =====================================================
-
     @PostMapping("/login")
     public LoginResponse login(
             @RequestBody LoginRequest request) {
@@ -45,11 +42,7 @@ public class AuthController {
     }
 
 
-    // =====================================================
     // REFRESH TOKEN
-    // =====================================================
-
-
 @PostMapping("/refresh")
 public ResponseEntity<?> refreshToken(
         @RequestBody RefreshTokenRequest request) {
@@ -60,10 +53,7 @@ public ResponseEntity<?> refreshToken(
 
 
 
-    // =====================================================
     // LOGOUT / OFFLINE
-    // =====================================================
-
     @PostMapping("/offline")
     public ResponseEntity<?> setOffline(
             Authentication authentication) {
@@ -99,10 +89,7 @@ public ResponseEntity<?> refreshToken(
     }
 
 
-    // =====================================================
     // MY PROFILE
-    // =====================================================
-
     @GetMapping("/profile")
     public ResponseEntity<ProfileResponse> getProfile(
             Authentication authentication) {
@@ -117,8 +104,7 @@ public ResponseEntity<?> refreshToken(
 
         String email = authentication.getName();
 
-        User user =
-                userRepository.findByEmail(email);
+		User user = userRepository.findByEmail(email);
 
         if (user == null) {
 
@@ -134,17 +120,12 @@ public ResponseEntity<?> refreshToken(
         if (user.getProfilePhoto() != null
                 && user.getProfilePhoto().length > 0) {
 
-            profilePhoto =
-                    Base64.getEncoder()
-                            .encodeToString(
-                                    user.getProfilePhoto()
-                            );
+			profilePhoto = Base64.getEncoder().encodeToString(user.getProfilePhoto());
         }
 
 
         // Create profile response
-        ProfileResponse profile =
-                new ProfileResponse();
+        ProfileResponse profile = new ProfileResponse();
 
         profile.setId(user.getId());
         profile.setName(user.getName());

@@ -30,31 +30,19 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	public LoginResponse login(LoginRequest request) {
 
-		System.out.println("LOGIN EMAIL: " + request.getEmail());
-
-		// =====================================================
+		System.out.println("LOGIN EMAIL: " + request.getEmail());	
 		// FIND USER
-		// =====================================================
-
 		User user = userRepository.findByEmail(request.getEmail());
-
 		if (user == null) {
 			throw new RuntimeException("USER NOT FOUND");
 		}
-
-		// =====================================================
 		// PASSWORD CHECK
-		// =====================================================
-
 		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
 
 			throw new RuntimeException("WRONG PASSWORD");
 		}
-
-		// =====================================================
+		
 		// USER ONLINE
-		// =====================================================
-
 		LocalDateTime now = LocalDateTime.now();
 
 		user.setOnline(true);
@@ -67,19 +55,12 @@ public class AuthServiceImpl implements AuthService {
 
 		userRepository.save(user);
 
-		// =====================================================
 		// ACCESS TOKEN
-		// =====================================================
 		String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole());
-		// =====================================================
-		// rEFRESH TOKEN
-		// =====================================================
+		// REFRESH TOKEN
 		String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
 
-		// =====================================================
 		// LOGIN RESPONSE
-		// =====================================================
-
 		return new LoginResponse(accessToken, refreshToken, user.getRole(), user.getId(), user.getName());
 	}
 
