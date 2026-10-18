@@ -47,6 +47,6 @@ public class User {
 	
 
 	@Lob
-	@Column(columnDefinition = "LONGBLOB")
+	@Column(name = "profile_photo")
 	private byte[] profilePhoto;
 }
