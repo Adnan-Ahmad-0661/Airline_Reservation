@@ -71,8 +71,8 @@ SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         .authorizeHttpRequests(auth -> auth
 
-            // H2 Console
-            .requestMatchers("/h2-console/**").permitAll()
+            
+            .requestMatchers("/render/**").permitAll()
 
             .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
