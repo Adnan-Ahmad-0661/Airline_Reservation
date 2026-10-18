@@ -22,7 +22,7 @@ public class LiveController {
     public void keepAlive() {
         try {
             restTemplate.getForObject(
-                "https://airline-reservation-n7d4.onrender.com/render",
+                "https://airline-reservation-n7d4.onrender.com",
                 String.class
             );
             System.out.println("Render ping sent.");

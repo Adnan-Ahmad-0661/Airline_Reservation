@@ -1,5 +1,6 @@
 package com.airline.reservation.service.impl;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 
@@ -56,13 +57,12 @@ public class UserServiceImpl implements UserService {
 
      // Save profile photo
      if (photo != null && !photo.isEmpty()) {
-         try {
-             user.setProfilePhoto(photo.getBytes());
-         } catch (Exception e) {
-             throw new RuntimeException(
-                     "Failed to upload profile photo", e);
-         }
-     }
+    	    try {
+    	        user.setProfilePhoto(photo.getBytes());
+    	    } catch (IOException e) {
+    	        throw new RuntimeException("Failed to upload profile photo", e);
+    	    }
+    	}
 
      // Save user
      User savedUser = userRepository.save(user);
